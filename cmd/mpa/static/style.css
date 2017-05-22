@@ -1,0 +1,13 @@
+body {
+    padding: 1em;
+}
+
+.preview {
+    padding: 5px;
+    background-color: #eee;
+}
+
+.preview-portrait {
+    padding: 5px 20% 5px 20%;
+    background-color: #eee;
+}

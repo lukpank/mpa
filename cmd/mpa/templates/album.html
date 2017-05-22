@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>{{.Title}}</title>
+	<link type="text/css" rel="stylesheet" href="/static/style.css">
+	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
+    </head>
+    <body>
+	<div class="flex six">
+	    {{range .Photos}}
+	    <div>
+		<article class="card">
+		    <img class="{{.Class}}" src="{{.Src}}">
+		</article>
+	    </div>
+	    {{end}}
+	</div>
+    </body>
+</html>
