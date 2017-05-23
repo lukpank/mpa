@@ -60,7 +60,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 				log.Println(err)
 			}
 			if portrait {
-				class = "preview-portrait"
+				class = "preview portrait"
 			}
 			data.Photos = append(data.Photos, img{"/preview/" + name, class})
 		}

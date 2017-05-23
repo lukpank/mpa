@@ -15,7 +15,6 @@ body {
     margin: auto;
 }
 
-.preview-portrait {
-    padding: 5px; 
-    margin: auto;
+.preview.portrait {
+    padding: 5px 20% 5px 20%;
 }
