@@ -2,12 +2,20 @@ body {
     padding: 1em;
 }
 
-.preview {
-    padding: 5px;
+.photo {
+    margin: auto;
+}
+
+.photo > .card {
     background-color: #eee;
 }
 
+.preview {
+    padding: 5px;
+    margin: auto;
+}
+
 .preview-portrait {
-    padding: 5px 20% 5px 20%;
-    background-color: #eee;
+    padding: 5px; 
+    margin: auto;
 }
