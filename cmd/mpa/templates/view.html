@@ -7,6 +7,25 @@
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
     </head>
     <body>
-	<img class="view" src="{{.Src}}">
+	<img id="view" class="view" src="{{.Src}}">
+	<script>
+	 var idx = {{.Index}};
+	 var photos = {{.Photos}};
+	 var view = document.getElementById("view");
+	 view.addEventListener("click", function(event) {
+	     b = view.getBoundingClientRect();
+	     if ((event.clientX - b.left) > b.width/2) {
+		 if (idx < photos.length - 1) {
+		     idx++;
+		     view.src = photos[idx];
+		 }
+	     } else {
+		 if (idx > 0) {
+		     idx--;
+		     view.src = photos[idx];
+		 }
+	     }
+	 }, false);
+	</script>
     </body>
 </html>

@@ -79,11 +79,28 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := struct {
-		Title string
-		Src   string
+		Title  string
+		Src    string
+		Photos []string
+		Index  int
 	}{
 		Title: path,
 		Src:   "/static" + path,
+	}
+	infos, err := ioutil.ReadDir("static/album")
+	if err != nil {
+		log.Println(err)
+		http.Error(w, "list dir error", http.StatusInternalServerError)
+		return
+	}
+	for _, info := range infos {
+		if name := info.Name(); strings.HasSuffix(name, ".jpg") {
+			photo := "/static/album/" + name
+			if data.Src == photo {
+				data.Index = len(data.Photos)
+			}
+			data.Photos = append(data.Photos, photo)
+		}
 	}
 	if err := s.t.ExecuteTemplate(w, "view.html", &data); err != nil {
 		log.Println(err)
