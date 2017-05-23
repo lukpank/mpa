@@ -21,6 +21,7 @@ func main() {
 	http.HandleFunc("/", s.ServeAlbum)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 	http.HandleFunc("/preview/", s.ServePreview)
+	http.HandleFunc("/view/", s.ServeView)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -29,7 +30,7 @@ type server struct {
 }
 
 func newServer() (*server, error) {
-	t, err := template.New("html").ParseFiles("templates/album.html")
+	t, err := template.New("html").ParseFiles("templates/album.html", "templates/view.html")
 	if err != nil {
 		return nil, err
 	}
@@ -63,10 +64,28 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 			if portrait {
 				class = "preview portrait"
 			}
-			data.Photos = append(data.Photos, img{Src: "/preview/" + name, Class: class, Href: "/static/album/" + name})
+			data.Photos = append(data.Photos, img{Src: "/preview/" + name, Class: class, Href: "/view/album/" + name})
 		}
 	}
 	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {
+		log.Println(err)
+	}
+}
+
+func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/view")
+	if len(path) == len(r.URL.Path) || len(path) == 0 || path[0] != '/' {
+		http.Error(w, "path prefix not found", http.StatusBadRequest)
+		return
+	}
+	data := struct {
+		Title string
+		Src   string
+	}{
+		Title: path,
+		Src:   "/static" + path,
+	}
+	if err := s.t.ExecuteTemplate(w, "view.html", &data); err != nil {
 		log.Println(err)
 	}
 }

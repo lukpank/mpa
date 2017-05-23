@@ -19,3 +19,12 @@ body {
 .preview.portrait {
     padding: 5px 20% 5px 20%;
 }
+
+.view {
+    max-height: 100%;
+    max-width: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
