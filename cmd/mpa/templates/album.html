@@ -11,7 +11,7 @@
 	    {{range .Photos}}
 	    <div class="photo">
 		<article class="card">
-		    <img class="{{.Class}}" src="{{.Src}}">
+		    <img class="{{.Class}}" src="{{.Src}}" onclick="location = {{.Href}}">
 		</article>
 	    </div>
 	    {{end}}

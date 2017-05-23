@@ -46,6 +46,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 	type img struct {
 		Src   string
 		Class string
+		Href  string
 	}
 	var data struct {
 		Title  string
@@ -62,7 +63,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 			if portrait {
 				class = "preview portrait"
 			}
-			data.Photos = append(data.Photos, img{"/preview/" + name, class})
+			data.Photos = append(data.Photos, img{Src: "/preview/" + name, Class: class, Href: "/static/album/" + name})
 		}
 	}
 	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {

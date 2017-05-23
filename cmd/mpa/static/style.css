@@ -13,6 +13,7 @@ body {
 .preview {
     padding: 5px;
     margin: auto;
+    cursor: pointer;
 }
 
 .preview.portrait {
