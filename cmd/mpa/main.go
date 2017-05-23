@@ -20,6 +20,7 @@ func main() {
 	}
 	http.HandleFunc("/", s.ServeAlbum)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+	http.HandleFunc("/preview/", s.ServePreview)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -61,7 +62,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 			if portrait {
 				class = "preview-portrait"
 			}
-			data.Photos = append(data.Photos, img{"/static/album/" + name, class})
+			data.Photos = append(data.Photos, img{"/preview/" + name, class})
 		}
 	}
 	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {
