@@ -22,7 +22,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 	http.HandleFunc("/preview/", s.ServePreview)
 	http.HandleFunc("/view/", s.ServeView)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", &logger{http.DefaultServeMux}))
 }
 
 type server struct {
