@@ -1,5 +1,9 @@
 body {
-    padding: 1em;
+    padding: 0 1em;
+}
+
+nav {
+    position: absolute;
 }
 
 .photo {
@@ -28,3 +32,8 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+nav.hidden {
+    display: none;
+}
+    

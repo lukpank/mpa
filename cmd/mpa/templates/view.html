@@ -2,27 +2,50 @@
 <html lang="en">
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{.Title}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
     </head>
     <body>
+	<nav id="nav" class="hidden">
+	    <div class="brand">
+		<a href="/" class="pseudo button">Album</a>
+	    </div>
+	    <div class="menu">
+		<span id="text"></span>
+	    </div>
+	</nav>
 	<img id="view" class="view" src="{{.Src}}">
 	<script>
 	 var idx = {{.Index}};
 	 var photos = {{.Photos}};
 	 var view = document.getElementById("view");
+	 var nav = document.getElementById("nav");
+	 var text = document.getElementById("text");
+	 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
+	 var hidden = true;
 	 view.addEventListener("click", function(event) {
 	     b = view.getBoundingClientRect();
-	     if ((event.clientX - b.left) > b.width/2) {
+	     if ((event.clientX - b.left) > 2*b.width/3) {
 		 if (idx < photos.length - 1) {
 		     idx++;
 		     view.src = photos[idx];
 		 }
-	     } else {
+		 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
+	     } else if ((event.clientX - b.left) < b.width/3) {
 		 if (idx > 0) {
 		     idx--;
 		     view.src = photos[idx];
+		 }
+		 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
+	     } else {
+		 if (hidden) {
+		     nav.className = "";
+		     hidden = false;
+		 } else {
+		     nav.className = "hidden";
+		     hidden = true;
 		 }
 	     }
 	 }, false);

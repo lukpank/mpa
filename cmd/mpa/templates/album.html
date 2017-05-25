@@ -2,12 +2,20 @@
 <html lang="en">
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{{.Title}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
     </head>
     <body>
-	<div class="flex two three-600 six-1200">
+	<nav>
+	    <div class="brand">
+		<a href="/" class="pseudo button icon-picture">Album</a>
+	    </div>
+	</nav>
+	<p>&nbsp;</p>
+	<main>
+	<div class="full flex two three-600 six-1200">
 	    {{range .Photos}}
 	    <div class="photo">
 		<article class="card">
@@ -16,5 +24,6 @@
 	    </div>
 	    {{end}}
 	</div>
+	</main>
     </body>
 </html>
