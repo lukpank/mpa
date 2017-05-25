@@ -7,7 +7,10 @@ function setupViewMode(params) {
 	var view = document.getElementById("view");
 	var nav = document.getElementById("nav");
 	var text = document.getElementById("text");
-	text.innerHTML = "" + (p.idx + 1) + " / " + p.photos.length;
+	function updateNav() {
+		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.photos.length;
+	}
+	updateNav();
 	var hidden = true;
 	view.addEventListener("click", function(event) {
 		var b = view.getBoundingClientRect();
@@ -15,14 +18,14 @@ function setupViewMode(params) {
 			if (p.idx < p.photos.length - 1) {
 				p.idx++;
 				view.src = p.photos[p.idx];
+				updateNav();
 			}
-			text.innerHTML = "" + (p.idx + 1) + " / " + p.photos.length;
 		} else if ((event.clientX - b.left) < b.width/3) {
 			if (p.idx > 0) {
 				p.idx--;
 				view.src = p.photos[p.idx];
+				updateNav();
 			}
-			text.innerHTML = "" + (p.idx + 1) + " / " + p.photos.length;
 		} else {
 			if (hidden) {
 				nav.className = "";
