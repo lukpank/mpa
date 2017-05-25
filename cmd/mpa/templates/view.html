@@ -6,6 +6,7 @@
 	<title>{{.Title}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
+	<script src="/static/mpa.js"></script>
     </head>
     <body>
 	<nav id="nav" class="hidden">
@@ -18,37 +19,8 @@
 	</nav>
 	<img id="view" class="view" src="{{.Src}}">
 	<script>
-	 var idx = {{.Index}};
-	 var photos = {{.Photos}};
-	 var view = document.getElementById("view");
-	 var nav = document.getElementById("nav");
-	 var text = document.getElementById("text");
-	 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
-	 var hidden = true;
-	 view.addEventListener("click", function(event) {
-	     b = view.getBoundingClientRect();
-	     if ((event.clientX - b.left) > 2*b.width/3) {
-		 if (idx < photos.length - 1) {
-		     idx++;
-		     view.src = photos[idx];
-		 }
-		 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
-	     } else if ((event.clientX - b.left) < b.width/3) {
-		 if (idx > 0) {
-		     idx--;
-		     view.src = photos[idx];
-		 }
-		 text.innerHTML = "" + (idx + 1) + " / " + photos.length;
-	     } else {
-		 if (hidden) {
-		     nav.className = "";
-		     hidden = false;
-		 } else {
-		     nav.className = "hidden";
-		     hidden = true;
-		 }
-	     }
-	 }, false);
+	 var params = {idx: {{.Index}}, photos: {{.Photos}}};
+	 setupViewMode(params);
 	</script>
     </body>
 </html>
