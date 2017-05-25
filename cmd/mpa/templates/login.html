@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MPA: Login</title>
+<link type="text/css" rel="stylesheet" href="/static/style.css" />
+<link type="text/css" rel="stylesheet" href="/static/picnic.min.css" />
+</head>
+
+<body>
+
+<div class="login">
+
+<form action="/login" method="post">
+<input type="hidden" name="redirect" value="{{.Redirect}}">
+
+<div>
+<input class="stack" type="text" name="login" placeholder="Login" autofocus>
+<input class="stack" type="password" name="password" placeholder="Password">
+{{with .Message}}
+<div class="stack login-error"><span class="label error">{{.}}</span></div>
+{{end}}
+<button class="stack" type="submit" value="Submit">{{tr "login|Submit"}}</button>
+</div>
+
+</form>
+</fieldset>
+
+</div>
+
+</body>
+</html>

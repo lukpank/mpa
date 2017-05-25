@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -14,27 +15,45 @@ import (
 )
 
 func main() {
-	s, err := newServer()
+	dbFileName := flag.String("f", "", "sqlite3 database file name")
+	httpAddr := flag.String("http", ":8080", "HTTP listen address")
+	insecureCookie := flag.Bool("insecure_cookie", false, "if client should send cookie over plain HTTP connection")
+	flag.Parse()
+	if *dbFileName == "" {
+		log.Fatal("option -f is requiered")
+	}
+	db, err := OpenDB(*dbFileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	s, err := newServer(db, !*insecureCookie)
 	if err != nil {
 		log.Fatal("error: ", err)
 	}
-	http.HandleFunc("/", s.ServeAlbum)
+	http.HandleFunc("/", s.authenticate(s.ServeAlbum))
+	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
+	http.HandleFunc("/view/", s.authenticate(s.ServeView))
+	http.HandleFunc("/login", s.serveLogin)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
-	http.HandleFunc("/preview/", s.ServePreview)
-	http.HandleFunc("/view/", s.ServeView)
-	log.Fatal(http.ListenAndServe(":8080", &logger{http.DefaultServeMux}))
+	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
 }
 
 type server struct {
-	t *template.Template
+	db     *DB
+	t      *template.Template
+	s      *Sessions
+	tr     func(string) string
+	secure bool // if client should send cookie only on HTTPS encrypted connection
 }
 
-func newServer() (*server, error) {
-	t, err := template.New("html").ParseFiles("templates/album.html", "templates/view.html")
+func newServer(db *DB, secure bool) (*server, error) {
+	tr := translations["en"]
+	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
+	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/login.html", "templates/view.html")
 	if err != nil {
 		return nil, err
 	}
-	return &server{t}, nil
+	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, secure: secure}, nil
 }
 
 func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
@@ -105,4 +124,17 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 	if err := s.t.ExecuteTemplate(w, "view.html", &data); err != nil {
 		log.Println(err)
 	}
+}
+
+func (s *server) error(w http.ResponseWriter, title, text string, code int) {
+	w.Header().Set("Content-Type", "text/plain")
+	http.Error(w, title+": "+text, code)
+}
+
+func (s *server) parseFormError(w http.ResponseWriter, err error) {
+	s.error(w, s.tr("Bad request: error parsing form"), err.Error(), http.StatusBadRequest)
+}
+
+func (s *server) internalError(w http.ResponseWriter, err error) {
+	s.error(w, s.tr("Internal server error"), err.Error(), http.StatusInternalServerError)
 }
