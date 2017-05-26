@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+    <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>New album</title>
+	<link type="text/css" rel="stylesheet" href="/static/style.css">
+	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
+	<script src="/static/mpa.js"></script>
+    </head>
+    <body>
+	<nav>
+	    <!-- responsive-->
+	    <input id="bmenu" type="checkbox" class="show">
+	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
+
+	    <div class="menu">
+		<input type="text" placeholder="Album name" style="width: 20em">
+		<button class="button">Submit</button>
+	    </div>
+	</nav>
+	<p>&nbsp;</p>
+
+	<main>
+	    <div class="full flex two three-600 six-1200" id="images">
+		<div id="multi">
+		    <label class="dropimage">
+			<input title='{{tr "Drop images or click here"}}' type="file" multiple>
+		    </label>
+		</div>
+	    </div>
+	</main>
+
+	<div class="modal">
+	    <input id="modal_1" type="checkbox"/>
+	    <label for="modal_1" class="overlay"></label>
+	    <article>
+		<header>
+		    <h4>{{tr "Add description or delete"}}</h4>
+		    <label for="modal_1" class="close">&times;</label>
+		</header>
+		<section class="content">
+		    <input type="text" id="description" placeholder='{{tr "Description"}}'>
+		</section>
+		<footer>
+		    <label for="modal_1" class="button" onclick="obj.addDescription();">{{tr "Update"}}</label>
+		    <label for="modal_1" class="button dangerous" onclick="obj.deleteImage();">{{tr "Delete"}}</label>
+		</footer>
+	    </article>
+	</div>
+
+	<script>
+	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}});
+	</script>
+    </body>
+</html>

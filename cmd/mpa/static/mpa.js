@@ -37,3 +37,69 @@ function setupViewMode(params) {
 		}
 	}, false);
 }
+
+function setupDropImage(clickMsg) {
+	var images = document.getElementById("images");
+	var multi = document.getElementById("multi");
+	var modal1 = document.getElementById('modal_1');
+	var description = document.getElementById('description');
+	this.images = [];
+	this.idx = 0;
+	this.modalIdx = 0;
+	this.addDescription = function() {
+		var o = this.images[this.modalIdx];
+		var old = o.description;
+		o.description = description.value;
+		if (description.value == "") {
+			if (old != "") {
+				o.span.className = "hidden";
+			}
+			return;
+		}
+		o.span.firstChild.nodeValue = description.value;
+		if (old == "") {
+			o.span.className = "label success full";
+		}
+	};
+	this.deleteImage = function() {
+		var o = this.images[this.modalIdx];
+		images.removeChild(o.div);
+		this.images[this.modalIdx] = null;
+	};
+	this.showModal = function(idx) {
+		this.modalIdx = idx;
+		description.value = this.images[idx].description;
+		modal1.checked = true; 
+		return false;
+	};
+	var obj = this;
+	this.addImage = function(file) {
+		var input = document.createElement("input");
+		input.setAttribute("title", clickMsg);
+		input.setAttribute("type", "file");
+		var idx = this.idx;
+		input.onclick = function () { return obj.showModal(idx); };
+		var label = document.createElement("label");
+		label.appendChild(input);
+		label.className = "dropimage";
+		var span = document.createElement("span");
+		span.className = "hidden";
+		span.appendChild(document.createTextNode(description.value));
+		var div = document.createElement("div");
+		div.appendChild(label);
+		div.appendChild(span);
+		var reader = new FileReader();
+		reader.onloadend = function(){
+			label.style['background-image'] = 'url('+reader.result+')';
+		};
+		reader.readAsDataURL(file);
+		images.insertBefore(div, multi);
+		this.images.push({div: div, file: file, span: span, description: ""});
+		this.idx++;
+	};
+	document.querySelector('.dropimage').onchange = function(e){
+		for (var i = 0; i < e.target.files.length; i++) {
+			obj.addImage(e.target.files[i]);
+		}
+	};
+}

@@ -33,7 +33,7 @@ nav {
     transform: translate(-50%, -50%);
 }
 
-nav.hidden {
+.hidden {
     display: none;
 }
 
@@ -46,4 +46,8 @@ div.login {
 
 div.login-error {
     background: #ff4136;
+}
+
+.label.full {
+    margin: 0px;
 }
