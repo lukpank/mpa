@@ -8,6 +8,7 @@ import "html/template"
 
 var translations = map[string]translation{
 	"en": enTranslation,
+	"pl": plTranslation,
 }
 
 type translation map[string]string
@@ -27,4 +28,17 @@ var enTranslation = translation{
 	"lang-code": "en",
 
 	"login|Submit": "Submit",
+}
+
+var plTranslation = translation{
+	"lang-code": "pl",
+
+	"Bad request: error parsing form": "Błędne zapytanie: błąd parsowania formularza",
+	"Incorrect login or password.":    "Niepoprawny login lub hasło.",
+	"Internal server error":           "Wewnętrzny błąd serwera",
+	"Login":                           "Login",
+	"Method not allowed":              "Niedozwolona metoda",
+	"Password":                        "Hasło",
+	"Please use POST.":                "Proszę użyć POST.",
+	"login|Submit":                    "Zaloguj się",
 }

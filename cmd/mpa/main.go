@@ -5,7 +5,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -16,6 +18,7 @@ import (
 
 func main() {
 	dbFileName := flag.String("f", "", "sqlite3 database file name")
+	dbInit := flag.String("init", "", "initialize the database file (argument is options such as lang=en or lang=pl)")
 	httpAddr := flag.String("http", ":8080", "HTTP listen address")
 	insecureCookie := flag.Bool("insecure_cookie", false, "if client should send cookie over plain HTTP connection")
 	flag.Parse()
@@ -25,6 +28,16 @@ func main() {
 	db, err := OpenDB(*dbFileName)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if *dbInit != "" {
+		lang, err := parseOptions(*dbInit)
+		if err != nil {
+			log.Fatal("failed to initialize database: ", err)
+		}
+		if err = db.Init(lang); err != nil {
+			log.Fatal("failed to initialize database: ", err)
+		}
+		return
 	}
 	s, err := newServer(db, !*insecureCookie)
 	if err != nil {
@@ -38,22 +51,51 @@ func main() {
 	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
 }
 
+func parseOptions(options string) (lang string, err error) {
+	mask := 0
+	for _, s := range strings.Split(options, ",") {
+		switch {
+		case strings.HasPrefix(s, "lang="):
+			lang = strings.TrimPrefix(s, "lang=")
+			if lang != "en" && lang != "pl" {
+				return "", fmt.Errorf("unsupported language: %s", lang)
+			}
+			mask |= 1
+		default:
+			return "", fmt.Errorf("unsupported option: %s", s)
+		}
+	}
+	if mask&1 == 0 {
+		return "", errors.New("please specify option lang=en or lang=pl")
+	}
+	return
+}
+
 type server struct {
 	db     *DB
 	t      *template.Template
 	s      *Sessions
 	tr     func(string) string
+	lang   string
 	secure bool // if client should send cookie only on HTTPS encrypted connection
 }
 
 func newServer(db *DB, secure bool) (*server, error) {
-	tr := translations["en"]
+	lang, err := db.GetMPAOptions()
+	if err != nil {
+		return nil, err
+	}
+	tr := translations[lang]
+	if tr == nil {
+		log.Printf("unsupported translation language %s, using en (i.e., English) instead", lang)
+		tr = translations["en"]
+	}
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
 	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/login.html", "templates/view.html")
 	if err != nil {
 		return nil, err
 	}
-	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, secure: secure}, nil
+	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure}, nil
 }
 
 func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
@@ -68,11 +110,14 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		Class string
 		Href  string
 	}
-	var data struct {
+	data := struct {
 		Title  string
+		Lang   string
 		Photos []img
+	}{
+		Title: "My album",
+		Lang:  s.lang,
 	}
-	data.Title = "My album"
 	for _, info := range infos {
 		if name := info.Name(); strings.HasSuffix(name, ".jpg") {
 			class := "preview"
@@ -99,11 +144,13 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Title  string
+		Lang   string
 		Src    string
 		Photos []string
 		Index  int
 	}{
 		Title: path,
+		Lang:  s.lang,
 		Src:   "/static" + path,
 	}
 	infos, err := ioutil.ReadDir("static/album")

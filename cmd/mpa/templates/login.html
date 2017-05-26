@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{.Lang}}">
 
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -17,8 +17,8 @@
 <input type="hidden" name="redirect" value="{{.Redirect}}">
 
 <div>
-<input class="stack" type="text" name="login" placeholder="Login" autofocus>
-<input class="stack" type="password" name="password" placeholder="Password">
+<input class="stack" type="text" name="login" placeholder='{{tr "Login"}}' autofocus>
+<input class="stack" type="password" name="password" placeholder='{{tr "Password"}}'>
 {{with .Message}}
 <div class="stack login-error"><span class="label error">{{.}}</span></div>
 {{end}}

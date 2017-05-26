@@ -5,12 +5,17 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"errors"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
 
+	"github.com/bgentry/speakeasy"
+	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/mxk/go-sqlite/sqlite3"
 )
 
 type DB struct {
@@ -20,14 +25,174 @@ type DB struct {
 var ErrSingleThread = errors.New("single threaded sqlite3 is not supported")
 
 func OpenDB(filename string) (*DB, error) {
-	if sqlite3.SingleThread() {
-		return nil, ErrSingleThread
-	}
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, err
 	}
 	return &DB{db}, nil
+}
+
+func (db *DB) Init(lang string) (err error) {
+	tx, err := db.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	err = createMPATable(tx, lang)
+	if err == nil {
+		_, err = tx.Exec(`
+CREATE TABLE users(
+uid INTEGER PRIMARY KEY,
+login TEXT UNIQUE,
+name TEXT,
+surname TEXT,
+email TEXT UNIQUE,
+admin_level INTEGER,
+require_password_change INTEGER DEFAULT 1,
+passwordhash BLOB)
+`)
+	}
+	if err == nil {
+		_, err = tx.Exec(`
+CREATE TABLE albums(
+aid INTEGER PRIMARY KEY,
+owner_id INTEGER,
+image_id INTEGER,
+is_portrait INTEGER,
+created INTEGER,
+modified INTEGER,
+name TEXT)
+`)
+	}
+	if err == nil {
+		_, err = tx.Exec(`
+CREATE TABLE images(
+iid INTEGER PRIMARY KEY,
+album_id INTEGER,
+sha256sum TEXT,
+title TEXT,
+is_portrait INTEGER,
+created INTEGER,
+owner_file_name TEXT)
+`)
+	}
+	if err == nil {
+		err = db.askAddUser(tx)
+	}
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (db *DB) askAddUser(tx Execer) error {
+	sc := bufio.NewScanner(os.Stdin)
+	login, err := ask(sc, "Login: ")
+	if err != nil {
+		return err
+	}
+	name, err := ask(sc, "Name: ")
+	if err != nil {
+		return err
+	}
+	surname, err := ask(sc, "Surname: ")
+	if err != nil {
+		return err
+	}
+	email, err := ask(sc, "Email: ")
+	if err != nil {
+		return err
+	}
+	pass, err := speakeasy.Ask("Password: ")
+	if err != nil {
+		return err
+	}
+	repeat, err := speakeasy.Ask("Retype password: ")
+	if err != nil {
+		return err
+	}
+	if repeat != pass {
+		return errors.New("failed to add user: passwords do not match")
+	}
+	return db.AddUser(tx, login, name, surname, email, 1, []byte(pass))
+}
+
+func ask(sc *bufio.Scanner, prompt string) (string, error) {
+	if _, err := fmt.Print(prompt); err != nil {
+		return "", err
+	}
+	if !sc.Scan() {
+		if err := sc.Err(); err != nil {
+			return "", err
+		}
+		return "", io.EOF
+	}
+	return sc.Text(), nil
+}
+
+func createMPATable(tx *sql.Tx, lang string) error {
+	_, err := tx.Exec("CREATE TABLE mpa(key TEXT UNIQUE, value TEXT)")
+	if err == nil {
+		_, err = tx.Exec("INSERT INTO mpa (key, value) VALUES ('db_version', '1')")
+	}
+	if err == nil {
+		_, err = tx.Exec("INSERT INTO mpa (key, value) VALUES ('lang', ?)", lang)
+	}
+	return err
+}
+
+func (db *DB) GetMPAOptions() (lang string, err error) {
+	rows, err := db.db.Query("SELECT key, value FROM mpa")
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	mask := 0
+	var key, value string
+	for rows.Next() {
+		err := rows.Scan(&key, &value)
+		if err != nil {
+			return "", err
+		}
+		switch key {
+		case "db_version":
+			mask |= 1
+			i, err := strconv.Atoi(value)
+			if err != nil {
+				return "", fmt.Errorf("error parsing db_version: %v", err)
+			}
+			if i != 1 {
+				return "", fmt.Errorf("expected db_version 1 but found %d", i)
+			}
+		case "lang":
+			mask |= 2
+			lang = value
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	if mask&1 == 0 {
+		return "", errors.New("missing db_version in mpa table")
+	}
+	if mask&2 == 0 {
+		return "", errors.New("missing lang in mpa table")
+	}
+	return
+}
+
+type Execer interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel int, password []byte) error {
+	p, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("INSERT INTO users (login, name, surname, email, admin_level, passwordhash) VALUES (?, ?, ?, ?, ?, ?)", login, name, surname, email, adminLevel, p)
+	return err
 }
 
 func (db *DB) AuthenticateUser(login string, password []byte) error {
