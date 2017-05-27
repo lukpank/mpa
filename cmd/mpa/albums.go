@@ -5,6 +5,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -61,6 +63,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		formName     string
 		userFileName string
 		description  string
+		sha256       string
 	}
 	var meta struct {
 		Name         string
@@ -95,16 +98,16 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := filepath.Join(tempDir, strconv.Itoa(len(files)))
-		n, err := writeFile(filename, p)
+		n, sha256, err := writeFileSha256(filename, p)
 		if err != nil {
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			log.Println(err)
 			return
 		}
-		inf := &info{filename: filename, formName: formName, userFileName: p.FileName()}
+		inf := &info{filename: filename, formName: formName, userFileName: p.FileName(), sha256: sha256}
 		files = append(files, inf)
 		m[idx] = inf
-		fmt.Println(p.Header, n, p.FormName(), p.FileName())
+		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
 	}
 	if meta.Name == "" {
 		http.Error(w, s.tr("Bad request: name not specified"), http.StatusBadRequest)
@@ -122,15 +125,16 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func writeFile(filename string, r io.Reader) (int64, error) {
+func writeFileSha256(filename string, r io.Reader) (int64, string, error) {
 	f, err := os.Create(filename)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	defer f.Close()
-	n, err := io.Copy(f, r)
+	h := sha256.New()
+	n, err := io.Copy(io.MultiWriter(f, h), r)
 	if err != nil {
-		return n, err
+		return n, "", err
 	}
-	return n, f.Close()
+	return n, hex.EncodeToString(h.Sum(nil)), f.Close()
 }
