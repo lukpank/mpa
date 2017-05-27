@@ -107,11 +107,15 @@ function setupDropImage(clickMsg) {
 		var div = document.createElement("div");
 		div.appendChild(label);
 		div.appendChild(span);
-		var reader = new FileReader();
-		reader.onloadend = function(){
-			label.style['background-image'] = 'url('+reader.result+')';
-		};
-		reader.readAsDataURL(file);
+		if (URL.createObjectURL) {
+			label.style['background-image'] = 'url('+URL.createObjectURL(file)+')';
+		} else {
+			var reader = new FileReader();
+			reader.onloadend = function(){
+				label.style['background-image'] = 'url('+reader.result+')';
+			};
+			reader.readAsDataURL(file);
+		}
 		images.insertBefore(div, multi);
 		this.images.push({div: div, file: file, span: span, description: ""});
 		this.idx++;
