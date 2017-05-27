@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -29,6 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	filesDir := *dbFileName + ".mpa"
 	if *dbInit != "" {
 		lang, err := parseOptions(*dbInit)
 		if err != nil {
@@ -37,9 +39,12 @@ func main() {
 		if err = db.Init(lang); err != nil {
 			log.Fatal("failed to initialize database: ", err)
 		}
+		if err := ensureDirExists(filepath.Join(filesDir)); err != nil {
+			log.Fatal("error: ", err)
+		}
 		return
 	}
-	s, err := newServer(db, !*insecureCookie)
+	s, err := newServer(db, !*insecureCookie, filesDir)
 	if err != nil {
 		log.Fatal("error: ", err)
 	}
@@ -73,16 +78,32 @@ func parseOptions(options string) (lang string, err error) {
 	return
 }
 
-type server struct {
-	db     *DB
-	t      *template.Template
-	s      *Sessions
-	tr     func(string) string
-	lang   string
-	secure bool // if client should send cookie only on HTTPS encrypted connection
+func ensureDirExists(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return os.Mkdir(path, 0700)
+		}
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("file %s exists but is not a directory", path)
+	}
+	return nil
 }
 
-func newServer(db *DB, secure bool) (*server, error) {
+type server struct {
+	db        *DB
+	t         *template.Template
+	s         *Sessions
+	tr        func(string) string
+	lang      string
+	secure    bool // if client should send cookie only on HTTPS encrypted connection
+	imagesDir string
+	uploadDir string
+}
+
+func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	lang, err := db.GetMPAOptions()
 	if err != nil {
 		return nil, err
@@ -92,12 +113,29 @@ func newServer(db *DB, secure bool) (*server, error) {
 		log.Printf("unsupported translation language %s, using en (i.e., English) instead", lang)
 		tr = translations["en"]
 	}
+	info, err := os.Stat(filesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("error: storage directory for images %s does not exist, create or rename it if you renamed database file", filesDir)
+		}
+		log.Fatal("error: ", err)
+	} else if !info.IsDir() {
+		return nil, fmt.Errorf("error: file %s exists but is not a directory (expected storage directory for images)", filesDir)
+	}
+	imagesDir := filepath.Join(filesDir, "images")
+	if err := ensureDirExists(imagesDir); err != nil {
+		return nil, err
+	}
+	uploadDir := filepath.Join(filesDir, "upload")
+	if err := ensureDirExists(uploadDir); err != nil {
+		return nil, err
+	}
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
 	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/index.html", "templates/login.html", "templates/new.html", "templates/view.html")
 	if err != nil {
 		return nil, err
 	}
-	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure}, nil
+	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure, imagesDir: imagesDir, uploadDir: uploadDir}, nil
 }
 
 func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
