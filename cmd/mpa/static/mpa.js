@@ -101,7 +101,7 @@ function setupDropImage(clickMsg, noSubmitMsg) {
 		}
 		prog.show();
 		var r = new XMLHttpRequest();
-		r.open("POST", "/new");
+		r.open("POST", "/api/new");
 		r.onerror = function() {
 			console.log("Connection error");
 		};

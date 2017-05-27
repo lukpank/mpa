@@ -22,11 +22,6 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		s.serveNewAlbumUpload(w, r)
-		return
-	}
-
 	data := struct {
 		Lang string
 	}{s.lang}
@@ -35,8 +30,7 @@ func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO: use /api/new with special authenticate which does not send login page
-func (s *server) serveNewAlbumUpload(w http.ResponseWriter, r *http.Request) {
+func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 	uid, err := s.SessionUid(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

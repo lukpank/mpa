@@ -31,7 +31,7 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-		api := strings.HasPrefix(r.URL.Path, "/_/api/")
+		api := strings.HasPrefix(r.URL.Path, "/api/")
 		if err != nil && err != ErrAuth && err != http.ErrNoCookie {
 			if api {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
