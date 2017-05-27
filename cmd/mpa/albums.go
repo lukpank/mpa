@@ -37,6 +37,13 @@ func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 
 // TODO: use /api/new with special authenticate which does not send login page
 func (s *server) serveNewAlbumUpload(w http.ResponseWriter, r *http.Request) {
+	uid, err := s.SessionUid(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		log.Println(err)
+		return
+	}
+	fmt.Println("uid:", uid)
 	mr, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, s.tr("Bad request: error parsing form")+": ", http.StatusBadRequest)
