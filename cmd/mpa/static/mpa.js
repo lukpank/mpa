@@ -54,7 +54,6 @@ function setupDropImage(clickMsg) {
 	var description = document.getElementById('description');
 	var prog = new progress();
 	this.images = [];
-	this.idx = 0;
 	this.modalIdx = 0;
 	this.addDescription = function() {
 		var o = this.images[this.modalIdx];
@@ -112,7 +111,7 @@ function setupDropImage(clickMsg) {
 		var input = document.createElement("input");
 		input.setAttribute("title", clickMsg);
 		input.setAttribute("type", "file");
-		var idx = this.idx;
+		var idx = this.images.length;
 		input.onclick = function () { return obj.showModal(idx); };
 		var label = document.createElement("label");
 		label.appendChild(input);
@@ -134,7 +133,6 @@ function setupDropImage(clickMsg) {
 		}
 		images.insertBefore(div, multi);
 		this.images.push({div: div, file: file, span: span, description: ""});
-		this.idx++;
 	};
 	document.querySelector('.dropimage').onchange = function(e){
 		for (var i = 0; i < e.target.files.length; i++) {
