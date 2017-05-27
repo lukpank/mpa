@@ -72,6 +72,25 @@ function setupDropImage(clickMsg) {
 		modal1.checked = true; 
 		return false;
 	};
+	this.submit = function() {
+		var d = new FormData();
+		for (var i = 0; i < this.images.length; i++) {
+			var o = this.images[i];
+			if (o == null) {
+				continue;
+			}
+			d.append("image", o.file);
+		}
+		var r = new XMLHttpRequest();
+		r.open("POST", "/new");
+		r.onerror = function() {
+			console.log("Connection error");
+		};
+		r.onload = function() {
+			console.log("onload: " + r.status);
+		};
+		r.send(d);
+	};
 	var obj = this;
 	this.addImage = function(file) {
 		var input = document.createElement("input");
