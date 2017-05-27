@@ -38,11 +38,21 @@ function setupViewMode(params) {
 	}, false);
 }
 
+function progress() {
+	var prog = document.getElementById('progress');
+	var percent = document.getElementById('percent');
+	this.show = function() { prog.className = "progress"; };
+	this.update = function(part, total) {
+		percent.style.width = (100 * part / total) + "%";
+	};
+}
+
 function setupDropImage(clickMsg) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
 	var description = document.getElementById('description');
+	var prog = new progress();
 	this.images = [];
 	this.idx = 0;
 	this.modalIdx = 0;
@@ -81,11 +91,17 @@ function setupDropImage(clickMsg) {
 			}
 			d.append("image", o.file);
 		}
+		prog.show();
 		var r = new XMLHttpRequest();
 		r.open("POST", "/new");
 		r.onerror = function() {
 			console.log("Connection error");
 		};
+		r.upload.addEventListener("progress", function(e) {
+			if (e.lengthComputable) {
+				prog.update(e.loaded, e.total);
+			}
+		});
 		r.onload = function() {
 			console.log("onload: " + r.status);
 		};
