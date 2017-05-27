@@ -51,26 +51,19 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	tempDir, err := ioutil.TempDir(s.uploadDir, "tmp")
+	tempDir, err := ioutil.TempDir(s.db.uploadDir, "tmp")
 	if err != nil {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
 	defer os.RemoveAll(tempDir)
-	type info struct {
-		filename     string
-		formName     string
-		userFileName string
-		description  string
-		sha256       string
-	}
 	var meta struct {
 		Name         string
 		Descriptions map[string]string
 	}
-	var files []*info
-	m := make(map[string]*info)
+	var files []*uploadInfo
+	m := make(map[string]*uploadInfo)
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {
@@ -104,7 +97,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		inf := &info{filename: filename, formName: formName, userFileName: p.FileName(), sha256: sha256}
+		inf := &uploadInfo{tmpFileName: filename, formName: formName, userFileName: p.FileName(), sha256: sha256}
 		files = append(files, inf)
 		m[idx] = inf
 		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
@@ -123,6 +116,52 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		inf.description = descr
 	}
+	if errs := s.db.AddAlbum(meta.Name, files); errs != nil {
+		for _, err := range errs {
+			log.Println(err)
+		}
+	}
+}
+
+type uploadInfo struct {
+	tmpFileName  string
+	formName     string
+	userFileName string
+	description  string
+	sha256       string
+}
+
+// AddAlarm (TODO) should also return error messages for end users
+func (db *DB) AddAlbum(name string, files []*uploadInfo) (errs []error) {
+	db.filesMu.Lock()
+	defer db.filesMu.Unlock()
+	var toRemove struct {
+		files []string // new files to remove
+	}
+	defer func() {
+		for _, fn := range toRemove.files {
+			if err := os.Remove(fn); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}()
+	for _, inf := range files {
+		dirName := filepath.Join(db.imagesDir, inf.sha256[:3])
+		destFilename := filepath.Join(dirName, inf.sha256[3:])
+		if err := ensureDirExists(dirName, 0755); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if err := os.Rename(inf.tmpFileName, destFilename); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		toRemove.files = append(toRemove.files, destFilename)
+	}
+
+	// TODO: if db transactions submitted than:
+	toRemove.files = nil
+	return
 }
 
 func writeFileSha256(filename string, r io.Reader) (int64, string, error) {

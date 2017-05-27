@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
+	"sync"
 
 	"github.com/bgentry/speakeasy"
 	_ "github.com/mattn/go-sqlite3"
@@ -20,6 +22,12 @@ import (
 
 type DB struct {
 	db *sql.DB
+
+	filesDir  string
+	uploadDir string
+	imagesDir string
+
+	filesMu sync.Mutex // protect against concurrent file write operations
 }
 
 var ErrSingleThread = errors.New("single threaded sqlite3 is not supported")
@@ -29,7 +37,40 @@ func OpenDB(filename string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{db}, nil
+	filesDir := filename + ".mpa"
+	return &DB{db: db, filesDir: filesDir,
+		imagesDir: filepath.Join(filesDir, "images"),
+		uploadDir: filepath.Join(filesDir, "upload")}, nil
+}
+
+func (db *DB) EnsureDirs() error {
+	info, err := os.Stat(db.filesDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("storage directory for images %s does not exist, create or rename it if you renamed database file", db.filesDir)
+		}
+		return err
+	} else if !info.IsDir() {
+		return fmt.Errorf("file %s exists but is not a directory (expected storage directory for images)", db.filesDir)
+	}
+	if err := ensureDirExists(db.imagesDir, 0755); err != nil {
+		return err
+	}
+	return ensureDirExists(db.uploadDir, 0755)
+}
+
+func ensureDirExists(path string, perm os.FileMode) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return os.Mkdir(path, perm)
+		}
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("file %s exists but is not a directory", path)
+	}
+	return nil
 }
 
 func (db *DB) Init(lang string) (err error) {
