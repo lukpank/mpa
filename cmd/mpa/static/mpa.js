@@ -47,7 +47,7 @@ function progress() {
 	};
 }
 
-function setupDropImage(clickMsg) {
+function setupDropImage(clickMsg, noSubmitMsg) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
@@ -82,13 +82,22 @@ function setupDropImage(clickMsg) {
 		return false;
 	};
 	this.submit = function() {
+		var meta = {name: document.getElementById("albumName").value, descriptions: {}};
 		var d = new FormData();
+		var ok = false;
 		for (var i = 0; i < this.images.length; i++) {
 			var o = this.images[i];
 			if (o == null) {
 				continue;
 			}
-			d.append("image", o.file);
+			d.append("image:" + i, o.file);
+			meta.descriptions[i] = o.description;
+			ok = true;
+		}
+		d.append("metadata", JSON.stringify(meta));
+		if (meta.name == "" || !ok) {
+			alert(noSubmitMsg);
+			return;
 		}
 		prog.show();
 		var r = new XMLHttpRequest();

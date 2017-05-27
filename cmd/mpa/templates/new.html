@@ -15,7 +15,7 @@
 	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
 
 	    <div class="menu">
-		<input type="text" placeholder="Album name" style="width: 20em">
+		<input type="text" id="albumName" placeholder="Album name" style="width: 20em">
 		<div class="hidden" id="progress"><div class="percent" id="percent" style="width: 0%">&nbsp;</div></div>
 		<button class="button" onclick="obj.submit()">Submit</button>
 	    </div>
@@ -51,7 +51,7 @@
 	</div>
 
 	<script>
-	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}});
+	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}}, {{tr "Please specify album name and add at least one image"}});
 	</script>
     </body>
 </html>

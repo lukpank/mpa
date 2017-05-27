@@ -44,7 +44,8 @@ var plTranslation = translation{
 	"Login":                        "Login",
 	"Method not allowed":           "Niedozwolona metoda",
 	"Password":                     "Hasło",
-	"Please use POST.":             "Proszę użyć POST.",
-	"Update":                       "Uaktualnij",
-	"login|Submit":                 "Zaloguj się",
+	"Please specify album name and add at least one image": "Proszę określić nazwę albumu i dodać co najmniej jeden obraz",
+	"Please use POST.":                                     "Proszę użyć POST.",
+	"Update":                                               "Uaktualnij",
+	"login|Submit":                                         "Zaloguj się",
 }
