@@ -51,6 +51,14 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (s *server) SessionUid(r *http.Request) (int, error) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return 0, err
+	}
+	return s.s.SessionUid(cookie.Value)
+}
+
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		s.error(w, s.tr("Method not allowed"), s.tr("Please use POST."), http.StatusMethodNotAllowed)
@@ -63,7 +71,8 @@ func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 	login := r.PostForm.Get("login")
 	password := r.PostForm.Get("password")
 	redirect := r.PostForm.Get("redirect")
-	if err := s.db.AuthenticateUser(login, []byte(password)); err != nil {
+	uid, err := s.db.AuthenticateUser(login, []byte(password))
+	if err != nil {
 		if err == ErrAuth {
 			w.WriteHeader(http.StatusUnauthorized)
 			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true)
@@ -72,7 +81,7 @@ func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sid, err := s.s.NewSession(sessionDuration * time.Second)
+	sid, err := s.s.NewSession(sessionDuration*time.Second, uid)
 	if err != nil {
 		s.internalError(w, err)
 		return
