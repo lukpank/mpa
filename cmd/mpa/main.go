@@ -51,7 +51,8 @@ func main() {
 	http.HandleFunc("/", s.authenticate(s.ServeIndex))
 	http.HandleFunc("/new", s.authenticate(s.ServeNewAlbum))
 	http.HandleFunc("/api/new", s.authenticate(s.ServeApiNewAlbum))
-	http.HandleFunc("/album", s.authenticate(s.ServeAlbum))
+	http.HandleFunc("/album/", s.authenticate(s.ServeAlbum))
+	http.HandleFunc("/album", s.authenticate(s.ServeAlbumOld))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
@@ -117,7 +118,16 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	return s, nil
 }
 
-func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
+func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		Lang string
+	}{s.lang}
+	if err := s.t.ExecuteTemplate(w, "index.html", &data); err != nil {
+		log.Println(err)
+	}
+}
+
+func (s *server) ServeAlbumOld(w http.ResponseWriter, r *http.Request) {
 	infos, err := ioutil.ReadDir("static/album")
 	if err != nil {
 		log.Println(err)

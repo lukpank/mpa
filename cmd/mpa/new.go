@@ -22,15 +22,6 @@ import (
 	"github.com/rwcarlsen/goexif/exif"
 )
 
-func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Lang string
-	}{s.lang}
-	if err := s.t.ExecuteTemplate(w, "index.html", &data); err != nil {
-		log.Println(err)
-	}
-}
-
 func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Lang string
