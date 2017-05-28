@@ -7,6 +7,14 @@ function setupViewMode(params) {
 	var view = document.getElementById("view");
 	var nav = document.getElementById("nav");
 	var text = document.getElementById("text");
+	var n = parseInt(window.location.hash.substr(1));
+	for (var i = 0; i < p.photos.length; i++) {
+		if (p.photos[i] == n) {
+			p.idx = i;
+			break;
+		}
+	}
+	view.src = "/image/" + p.photos[p.idx];
 	function updateNav() {
 		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.photos.length;
 	}
@@ -17,13 +25,13 @@ function setupViewMode(params) {
 		if ((event.clientX - b.left) > 2*b.width/3) {
 			if (p.idx < p.photos.length - 1) {
 				p.idx++;
-				view.src = p.photos[p.idx];
+				view.src = "/image/" + p.photos[p.idx];
 				updateNav();
 			}
 		} else if ((event.clientX - b.left) < b.width/3) {
 			if (p.idx > 0) {
 				p.idx--;
-				view.src = p.photos[p.idx];
+				view.src = "/image/" + p.photos[p.idx];
 				updateNav();
 			}
 		} else {

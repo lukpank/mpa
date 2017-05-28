@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -52,7 +51,6 @@ func main() {
 	http.HandleFunc("/new", s.authenticate(s.ServeNewAlbum))
 	http.HandleFunc("/api/new", s.authenticate(s.ServeApiNewAlbum))
 	http.HandleFunc("/album/", s.authenticate(s.ServeAlbum))
-	http.HandleFunc("/album", s.authenticate(s.ServeAlbumOld))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
@@ -123,81 +121,6 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 		Lang string
 	}{s.lang}
 	if err := s.t.ExecuteTemplate(w, "index.html", &data); err != nil {
-		log.Println(err)
-	}
-}
-
-func (s *server) ServeAlbumOld(w http.ResponseWriter, r *http.Request) {
-	infos, err := ioutil.ReadDir("static/album")
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "list dir error", http.StatusInternalServerError)
-		return
-	}
-	type img struct {
-		Src   string
-		Class string
-		Href  string
-	}
-	data := struct {
-		Title  string
-		Lang   string
-		Photos []img
-	}{
-		Title: "My album",
-		Lang:  s.lang,
-	}
-	for _, info := range infos {
-		if name := info.Name(); strings.HasSuffix(name, ".jpg") {
-			class := "preview"
-			portrait, err := isPortrait(filepath.Join("static/album", name))
-			if err != nil {
-				log.Println(err)
-			}
-			if portrait {
-				class = "preview portrait"
-			}
-			data.Photos = append(data.Photos, img{Src: "/preview/" + name, Class: class, Href: "/view/album/" + name})
-		}
-	}
-	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {
-		log.Println(err)
-	}
-}
-
-func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/view")
-	if len(path) == len(r.URL.Path) || len(path) == 0 || path[0] != '/' {
-		http.Error(w, "path prefix not found", http.StatusBadRequest)
-		return
-	}
-	data := struct {
-		Title  string
-		Lang   string
-		Src    string
-		Photos []string
-		Index  int
-	}{
-		Title: path,
-		Lang:  s.lang,
-		Src:   "/static" + path,
-	}
-	infos, err := ioutil.ReadDir("static/album")
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "list dir error", http.StatusInternalServerError)
-		return
-	}
-	for _, info := range infos {
-		if name := info.Name(); strings.HasSuffix(name, ".jpg") {
-			photo := "/static/album/" + name
-			if data.Src == photo {
-				data.Index = len(data.Photos)
-			}
-			data.Photos = append(data.Photos, photo)
-		}
-	}
-	if err := s.t.ExecuteTemplate(w, "view.html", &data); err != nil {
 		log.Println(err)
 	}
 }

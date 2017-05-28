@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"io/ioutil"
 	"log"
@@ -146,6 +147,19 @@ type uploadInfo struct {
 	isPortrait   bool
 	isAlbumImage bool
 	created      time.Time
+}
+
+func isPortrait(filename string) (bool, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	cfg, _, err := image.DecodeConfig(f)
+	if err != nil {
+		return false, err
+	}
+	return cfg.Height > cfg.Width, nil
 }
 
 // AddAlarm (TODO) should also return error messages for end users
