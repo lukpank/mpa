@@ -28,7 +28,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	rows, err := s.db.db.Query("SELECT iid, is_portrait from images WHERE album_id=? ORDER BY created", albumID)
+	rows, err := s.db.db.Query("SELECT iid, is_portrait, title from images WHERE album_id=? ORDER BY created", albumID)
 	if err != nil {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		log.Println(err)
@@ -40,6 +40,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		Src   string
 		Class string
 		Href  string
+		Title string
 	}
 	data := struct {
 		Title  string
@@ -52,7 +53,8 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id int64
 		var portrait bool
-		if err := rows.Scan(&id, &portrait); err != nil {
+		var description string
+		if err := rows.Scan(&id, &portrait, &description); err != nil {
 			log.Println(err)
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			return
@@ -61,7 +63,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		if portrait {
 			class = "preview portrait"
 		}
-		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id)})
+		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id), Title: description})
 	}
 	if err := rows.Err(); err != nil {
 		log.Println(err)

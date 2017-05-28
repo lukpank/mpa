@@ -50,6 +50,7 @@ func main() {
 	http.HandleFunc("/", s.authenticate(s.ServeIndex))
 	http.HandleFunc("/new", s.authenticate(s.ServeNewAlbum))
 	http.HandleFunc("/api/new", s.authenticate(s.ServeApiNewAlbum))
+	http.HandleFunc("/albums/", s.authenticate(s.ServeAlbums))
 	http.HandleFunc("/album/", s.authenticate(s.ServeAlbum))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
