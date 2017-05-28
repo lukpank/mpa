@@ -53,6 +53,7 @@ func main() {
 	http.HandleFunc("/album", s.authenticate(s.ServeAlbum))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
+	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.serveLogin)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
