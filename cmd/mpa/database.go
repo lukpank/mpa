@@ -23,9 +23,10 @@ import (
 type DB struct {
 	db *sql.DB
 
-	filesDir  string
-	uploadDir string
-	imagesDir string
+	filesDir   string
+	imagesDir  string
+	previewDir string
+	uploadDir  string
 
 	filesMu sync.Mutex // protect against concurrent file write operations
 }
@@ -39,8 +40,9 @@ func OpenDB(filename string) (*DB, error) {
 	}
 	filesDir := filename + ".mpa"
 	return &DB{db: db, filesDir: filesDir,
-		imagesDir: filepath.Join(filesDir, "images"),
-		uploadDir: filepath.Join(filesDir, "upload")}, nil
+		imagesDir:  filepath.Join(filesDir, "images"),
+		previewDir: filepath.Join(filesDir, "preview"),
+		uploadDir:  filepath.Join(filesDir, "upload")}, nil
 }
 
 func (db *DB) EnsureDirs() error {
@@ -54,6 +56,9 @@ func (db *DB) EnsureDirs() error {
 		return fmt.Errorf("file %s exists but is not a directory (expected storage directory for images)", db.filesDir)
 	}
 	if err := ensureDirExists(db.imagesDir, 0755); err != nil {
+		return err
+	}
+	if err := ensureDirExists(db.previewDir, 0755); err != nil {
 		return err
 	}
 	return ensureDirExists(db.uploadDir, 0755)

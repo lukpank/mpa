@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -53,6 +54,7 @@ func main() {
 	http.HandleFunc("/album", s.authenticate(s.ServeAlbum))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
+	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.serveLogin)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
@@ -80,12 +82,13 @@ func parseOptions(options string) (lang string, err error) {
 }
 
 type server struct {
-	db     *DB
-	t      *template.Template
-	s      *Sessions
-	tr     func(string) string
-	lang   string
-	secure bool // if client should send cookie only on HTTPS encrypted connection
+	db      *DB
+	t       *template.Template
+	s       *Sessions
+	tr      func(string) string
+	lang    string
+	secure  bool // if client should send cookie only on HTTPS encrypted connection
+	preview chan previewRequest
 }
 
 func newServer(db *DB, secure bool, filesDir string) (*server, error) {
@@ -106,7 +109,12 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	if err := db.EnsureDirs(); err != nil {
 		return nil, err
 	}
-	return &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure}, nil
+	c := make(chan previewRequest)
+	s := &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure, preview: c}
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go s.previewWorker()
+	}
+	return s, nil
 }
 
 func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
