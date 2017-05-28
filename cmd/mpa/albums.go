@@ -17,6 +17,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +47,6 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	fmt.Println("uid:", uid)
 	mr, err := r.MultipartReader()
 	if err != nil {
 		http.Error(w, s.tr("Bad request: error parsing form")+": ", http.StatusBadRequest)
@@ -97,16 +99,36 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		inf := &uploadInfo{tmpFileName: filename, formName: formName, userFileName: p.FileName(), sha256: sha256}
+		isPort, err := isPortrait(filename)
+		if err != nil {
+			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		var created time.Time
+		t, err := exifDateTimeFromFile(filename)
+		if err != nil {
+			created = time.Now().UTC()
+			log.Println(err)
+		} else {
+			created = t
+		}
+		inf := &uploadInfo{tmpFileName: filename, formName: formName, userFileName: p.FileName(), sha256: sha256, isPortrait: isPort, created: created}
 		files = append(files, inf)
 		m[idx] = inf
 		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
 	}
 	if meta.Name == "" {
 		http.Error(w, s.tr("Bad request: name not specified"), http.StatusBadRequest)
-		log.Println(err)
+		log.Println("Bad request: name not specified")
 		return
 	}
+	if len(files) == 0 {
+		http.Error(w, s.tr("Bad request: no images specified"), http.StatusBadRequest)
+		log.Println("Bad request: no images specified")
+		return
+	}
+	files[0].isAlbumImage = true
 	for idx, descr := range meta.Descriptions {
 		inf := m[idx]
 		if m[idx] == nil {
@@ -116,7 +138,8 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		inf.description = descr
 	}
-	if errs := s.db.AddAlbum(meta.Name, files); errs != nil {
+	if n, errs := s.db.AddAlbum(uid, meta.Name, files); errs != nil {
+		log.Println("album: ", n)
 		for _, err := range errs {
 			log.Println(err)
 		}
@@ -129,15 +152,19 @@ type uploadInfo struct {
 	userFileName string
 	description  string
 	sha256       string
+	isPortrait   bool
+	isAlbumImage bool
+	created      time.Time
 }
 
 // AddAlarm (TODO) should also return error messages for end users
-func (db *DB) AddAlbum(name string, files []*uploadInfo) (errs []error) {
+func (db *DB) AddAlbum(uid int, name string, files []*uploadInfo) (n int, errs []error) {
 	db.filesMu.Lock()
 	defer db.filesMu.Unlock()
 	var toRemove struct {
 		files []string // new files to remove
 	}
+	var fs []*uploadInfo
 	defer func() {
 		for _, fn := range toRemove.files {
 			if err := os.Remove(fn); err != nil {
@@ -152,15 +179,72 @@ func (db *DB) AddAlbum(name string, files []*uploadInfo) (errs []error) {
 			errs = append(errs, err)
 			continue
 		}
+		_, err := os.Stat(destFilename)
+		if err == nil {
+			// File alread exists
+			fs = append(fs, inf)
+			continue
+		}
+		if !os.IsNotExist(err) {
+			errs = append(errs, err)
+			continue
+		}
 		if err := os.Rename(inf.tmpFileName, destFilename); err != nil {
 			errs = append(errs, err)
 			continue
 		}
+		fs = append(fs, inf)
 		toRemove.files = append(toRemove.files, destFilename)
 	}
 
-	// TODO: if db transactions submitted than:
+	tx, err := db.db.Begin()
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
+	defer tx.Rollback()
+	now := time.Now().UTC().Unix()
+	r, err := tx.Exec("INSERT INTO albums (owner_id, created, modified, name) VALUES (?, ?, ?, ?)",
+		uid, now, now, name)
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
+	albumID, err := r.LastInsertId()
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
+	var imageID int64
+	isPortrait := false
+	for _, inf := range fs {
+		r, err := tx.Exec("INSERT INTO images (sha256sum, album_id, title, is_portrait, created, owner_file_name) VALUES (?, ?, ?, ?, ?, ?)",
+			inf.sha256, albumID, inf.description, inf.isPortrait, inf.created, inf.userFileName)
+		if err != nil {
+			errs = append(errs, err)
+			return
+		}
+		if inf.isAlbumImage {
+			imageID, err = r.LastInsertId()
+			isPortrait = inf.isPortrait
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+		}
+	}
+	_, err = tx.Exec("UPDATE albums SET image_id=?, is_portrait=? WHERE aid=?", imageID, isPortrait, albumID)
+	if err != nil {
+		errs = append(errs, err)
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		errs = append(errs, err)
+		return
+	}
+	// transaction commited so we do not want to remove new files
 	toRemove.files = nil
+	n = len(fs)
 	return
 }
 
@@ -176,4 +260,22 @@ func writeFileSha256(filename string, r io.Reader) (int64, string, error) {
 		return n, "", err
 	}
 	return n, hex.EncodeToString(h.Sum(nil)), f.Close()
+}
+
+func exifDateTimeFromFile(filename string) (time.Time, error) {
+	var t time.Time
+	f, err := os.Open(filename)
+	if err != nil {
+		return t, err
+	}
+	defer f.Close()
+	x, err := exif.Decode(f)
+	if err != nil {
+		return t, err
+	}
+	t, err = x.DateTime()
+	if err != nil {
+		return t, err
+	}
+	return t, nil
 }
