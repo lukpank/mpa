@@ -58,6 +58,7 @@ func main() {
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.serveLogin)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+	http.HandleFunc("/favicon.ico", ServeFavicon)
 	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
 }
 
@@ -124,6 +125,10 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	if err := s.t.ExecuteTemplate(w, "index.html", &data); err != nil {
 		log.Println(err)
 	}
+}
+
+func ServeFavicon(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/static/favicon.png", http.StatusSeeOther)
 }
 
 func (s *server) error(w http.ResponseWriter, title, text string, code int) {
