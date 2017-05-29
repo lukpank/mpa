@@ -16,20 +16,20 @@
 	</nav>
 	<p>&nbsp;</p>
 	<main>
-	<div class="full flex two three-600 six-1200">
-	  {{range .Photos}}
-	    <div>
-		<div class="photo">
-		    <article class="card">
-			<img class="{{.Class}}" src="{{.Src}}" onclick="location = {{.Href}}">
-		    </article>
+	    <div class="full flex two three-600 six-1200">
+		{{range .Photos}}
+		<div>
+		    <div class="photo">
+			<article class="card">
+			    <img class="{{.Class}}" src="{{.Src}}" onclick="location = {{.Href}}">
+			</article>
+		    </div>
+		    {{with .Title}}
+		    <span class="label success full">{{.}}</span>
+		    {{end}}
 		</div>
-		{{with .Title}}
-		<span class="label success full">{{.}}</span>
 		{{end}}
 	    </div>
-	  {{end}}
-	</div>
 	</main>
     </body>
 </html>
