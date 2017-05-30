@@ -37,16 +37,28 @@ nav {
     display: none;
 }
 
-div.login {
-    position: absolute;
-    bottom: 50%;
-    right: 50%;
-    transform: translate(50%,50%);
-    padding: 2em 0;
+div.centering {
+    max-width: 25em;
+}    
+
+@media all and (max-width: 600px) {
+    div.centering {
+	margin: 3em auto;
+    }
 }
 
-.login.four-fifth {
-    max-width: 25em;
+@media all and (min-width: 601px) {
+    div.centering {
+	position: absolute;
+	bottom: 50%;
+	right: 50%;
+	transform: translate(50%,50%);
+	padding: 2em 0;
+    }
+}
+
+.centering.login {
+    max-width: 15em;
 }
 
 div.login-error {
@@ -77,3 +89,4 @@ div.login-error {
     border: 1px solid #ccc;
     border-bottom-width: 0;
 }
+
