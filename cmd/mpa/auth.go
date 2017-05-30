@@ -36,7 +36,7 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 			if api {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else {
-				s.internalError(w, err)
+				s.internalError(w, err, s.tr("Authentication error"))
 			}
 			return
 		}
@@ -59,7 +59,7 @@ func (s *server) authorizeAsAdmin(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		if err != nil && err != ErrAuth {
-			s.internalError(w, err)
+			s.internalError(w, err, s.tr("Authorization error"))
 			return
 		}
 		s.error(w, s.tr("Authorization error"), s.tr("Admin account required"), http.StatusUnauthorized)
@@ -92,13 +92,13 @@ func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true)
 		} else {
-			s.internalError(w, err)
+			s.internalError(w, err, s.tr("Authentication error"))
 		}
 		return
 	}
 	sid, err := s.s.NewSession(sessionDuration*time.Second, SessionData{uid, admin})
 	if err != nil {
-		s.internalError(w, err)
+		s.internalError(w, err, s.tr("Authentication error"))
 		return
 	}
 	s.setSessionCookie(w, sid, 2*sessionDuration)

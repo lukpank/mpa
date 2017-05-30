@@ -42,6 +42,11 @@ div.login {
     bottom: 50%;
     right: 50%;
     transform: translate(50%,50%);
+    padding: 2em 0;
+}
+
+.login.four-fifth {
+    max-width: 25em;
 }
 
 div.login-error {
@@ -65,4 +70,10 @@ div.login-error {
     padding: 0.3em 0;
     background: #bbb;
     height: 100%;
+}
+
+.stack.border {
+    padding: 0.3em 0.6em;
+    border: 1px solid #ccc;
+    border-bottom-width: 0;
 }

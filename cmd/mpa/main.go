@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -57,6 +58,7 @@ func main() {
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.serveLogin)
+	http.HandleFunc("/new/user", s.authenticate(s.authorizeAsAdmin(s.ServeNewUser)))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 	http.HandleFunc("/favicon.ico", ServeFavicon)
 	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
@@ -103,7 +105,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		tr = translations["en"]
 	}
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
-	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/index.html", "templates/login.html", "templates/new.html", "templates/view.html")
+	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/index.html", "templates/login.html", "templates/new.html", "templates/newuser.html", "templates/newuserok.html", "templates/view.html")
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +129,18 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) executeTemplate(w http.ResponseWriter, name string, data interface{}, code int) {
+	var b bytes.Buffer
+	if err := s.t.ExecuteTemplate(&b, name, &data); err != nil {
+		s.internalError(w, err, s.tr("Error during template execution"))
+		return
+	}
+	w.WriteHeader(code)
+	if _, err := b.WriteTo(w); err != nil {
+		log.Println(err)
+	}
+}
+
 func ServeFavicon(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/static/favicon.png", http.StatusSeeOther)
 }
@@ -137,9 +151,11 @@ func (s *server) error(w http.ResponseWriter, title, text string, code int) {
 }
 
 func (s *server) parseFormError(w http.ResponseWriter, err error) {
-	s.error(w, s.tr("Bad request: error parsing form"), err.Error(), http.StatusBadRequest)
+	log.Println(err)
+	s.error(w, s.tr("Bad request"), s.tr("Error parsing form"), http.StatusBadRequest)
 }
 
-func (s *server) internalError(w http.ResponseWriter, err error) {
-	s.error(w, s.tr("Internal server error"), err.Error(), http.StatusInternalServerError)
+func (s *server) internalError(w http.ResponseWriter, err error, msg string) {
+	log.Println(err)
+	s.error(w, s.tr("Internal server error"), msg, http.StatusInternalServerError)
 }

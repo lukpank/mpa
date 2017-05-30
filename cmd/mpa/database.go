@@ -257,3 +257,20 @@ func (db *DB) AuthenticateUser(login string, password []byte) (int64, bool, erro
 	}
 	return uid, admin, err
 }
+
+func (db *DB) AuthenticateUserByUid(uid int64, password []byte) (string, bool, error) {
+	var login string
+	var admin bool
+	var h []byte
+	if err := db.db.QueryRow("SELECT login, admin_level, passwordhash FROM users WHERE uid=?", uid).Scan(&login, &admin, &h); err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, ErrAuth
+		}
+		return "", false, err
+	}
+	err := bcrypt.CompareHashAndPassword(h, password)
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return "", false, ErrAuth
+	}
+	return login, admin, err
+}

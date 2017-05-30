@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+    <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Add user</title>
+	<link type="text/css" rel="stylesheet" href="/static/style.css" />
+	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css" />
+	<link rel="icon" href="/static/favicon.png" />
+    </head>
+    <body>
+	<div class="login four-fifth">
+	    <table class="primary">
+		<thead>
+		    <tr><th>{{tr "Field"}}</th> <th>{{tr "Value"}}</th></tr>
+		</thead>
+		<tbody>
+		    <tr><td>{{tr "Login"}}</td><td>{{.Login}}</td></tr>
+		    <tr><td>{{tr "Admin"}}</td><td>{{if .Admin}} {{tr "yes"}} {{else}} {{tr "no"}} {{end}}</td></tr>
+		    <tr><td>{{tr "person|Name"}}</td><td>{{.Name}}</td></tr>
+		    <tr><td>{{tr "Surname"}}</td><td>{{.Surname}}</td></tr>
+		    <tr><td>{{tr "Email"}}</td><td>{{.Email}}</td></tr>
+		    <tr><td>{{tr "Password"}}</td><td>{{.TmpPassword}}</td></tr>
+		</tbody>
+	    </table>
+	</div>
+    </body>
+</html>
