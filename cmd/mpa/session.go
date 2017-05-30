@@ -22,7 +22,12 @@ type Sessions struct {
 type session struct {
 	expires time.Time
 	client  time.Time // the time session was send to the client
-	uid     int
+	data    SessionData
+}
+
+type SessionData struct {
+	Uid   int
+	Admin bool
 }
 
 func NewSessions() *Sessions {
@@ -35,7 +40,7 @@ func NewSessions() *Sessions {
 // session cookie send to the client should have max age equal to
 // twice the duration given as argument to NewSession so the session
 // is properly extended with following calls to CheckSession.
-func (s *Sessions) NewSession(d time.Duration, uid int) (string, error) {
+func (s *Sessions) NewSession(d time.Duration, data SessionData) (string, error) {
 	var a [16]byte
 	_, err := rand.Read(a[:])
 	if err != nil {
@@ -51,7 +56,7 @@ func (s *Sessions) NewSession(d time.Duration, uid int) (string, error) {
 	if len(s.m) == 0 || t.Before(s.next) {
 		s.next = t
 	}
-	s.m[v] = &session{t, now, uid} // now: we treat the new session cookie as already sent
+	s.m[v] = &session{t, now, data} // now: we treat the new session cookie as already sent
 	s.expire()
 	return v, nil
 }
@@ -79,14 +84,14 @@ func (s *Sessions) CheckSession(v string, d time.Duration) (bool, error) {
 	return false, nil
 }
 
-func (s *Sessions) SessionUid(v string) (int, error) {
+func (s *Sessions) SessionData(v string) (SessionData, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.m[v]
 	if !ok {
-		return 0, ErrNoSuchSession
+		return SessionData{}, ErrNoSuchSession
 	}
-	return d.uid, nil
+	return d.data, nil
 }
 
 var ErrNoSuchSession = errors.New("no such session")

@@ -33,7 +33,7 @@ func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
-	uid, err := s.SessionUid(r)
+	session, err := s.SessionData(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		log.Println(err)
@@ -130,7 +130,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		inf.description = descr
 	}
-	if n, errs := s.db.AddAlbum(uid, meta.Name, files); errs != nil {
+	if n, errs := s.db.AddAlbum(session.Uid, meta.Name, files); errs != nil {
 		log.Println("album: ", n)
 		for _, err := range errs {
 			log.Println(err)

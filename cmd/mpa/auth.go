@@ -51,12 +51,27 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (s *server) SessionUid(r *http.Request) (int, error) {
+func (s *server) authorizeAsAdmin(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, err := s.SessionData(r)
+		if err == nil && session.Admin {
+			h(w, r)
+			return
+		}
+		if err != nil && err != ErrAuth {
+			s.internalError(w, err)
+			return
+		}
+		s.error(w, s.tr("Authorization error"), s.tr("Admin account required"), http.StatusUnauthorized)
+	}
+}
+
+func (s *server) SessionData(r *http.Request) (SessionData, error) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
-		return 0, err
+		return SessionData{}, err
 	}
-	return s.s.SessionUid(cookie.Value)
+	return s.s.SessionData(cookie.Value)
 }
 
 func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +86,7 @@ func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 	login := r.PostForm.Get("login")
 	password := r.PostForm.Get("password")
 	redirect := r.PostForm.Get("redirect")
-	uid, err := s.db.AuthenticateUser(login, []byte(password))
+	uid, admin, err := s.db.AuthenticateUser(login, []byte(password))
 	if err != nil {
 		if err == ErrAuth {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -81,7 +96,7 @@ func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sid, err := s.s.NewSession(sessionDuration*time.Second, uid)
+	sid, err := s.s.NewSession(sessionDuration*time.Second, SessionData{uid, admin})
 	if err != nil {
 		s.internalError(w, err)
 		return

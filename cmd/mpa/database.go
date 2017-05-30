@@ -241,18 +241,19 @@ func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel 
 	return err
 }
 
-func (db *DB) AuthenticateUser(login string, password []byte) (int, error) {
+func (db *DB) AuthenticateUser(login string, password []byte) (int, bool, error) {
 	var uid int
+	var admin bool
 	var h []byte
-	if err := db.db.QueryRow("SELECT uid, passwordhash FROM users WHERE login=?", login).Scan(&uid, &h); err != nil {
+	if err := db.db.QueryRow("SELECT uid, admin_level, passwordhash FROM users WHERE login=?", login).Scan(&uid, &admin, &h); err != nil {
 		if err == sql.ErrNoRows {
-			return 0, ErrAuth
+			return 0, false, ErrAuth
 		}
-		return 0, err
+		return 0, false, err
 	}
 	err := bcrypt.CompareHashAndPassword(h, password)
 	if err == bcrypt.ErrMismatchedHashAndPassword {
-		return 0, ErrAuth
+		return 0, false, ErrAuth
 	}
-	return uid, err
+	return uid, admin, err
 }
