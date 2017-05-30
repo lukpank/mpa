@@ -241,8 +241,8 @@ func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel 
 	return err
 }
 
-func (db *DB) AuthenticateUser(login string, password []byte) (int, bool, error) {
-	var uid int
+func (db *DB) AuthenticateUser(login string, password []byte) (int64, bool, error) {
+	var uid int64
 	var admin bool
 	var h []byte
 	if err := db.db.QueryRow("SELECT uid, admin_level, passwordhash FROM users WHERE login=?", login).Scan(&uid, &admin, &h); err != nil {

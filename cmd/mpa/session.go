@@ -26,7 +26,7 @@ type session struct {
 }
 
 type SessionData struct {
-	Uid   int
+	Uid   int64
 	Admin bool
 }
 

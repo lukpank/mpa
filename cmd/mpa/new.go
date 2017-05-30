@@ -163,7 +163,7 @@ func isPortrait(filename string) (bool, error) {
 }
 
 // AddAlarm (TODO) should also return error messages for end users
-func (db *DB) AddAlbum(uid int, name string, files []*uploadInfo) (n int, errs []error) {
+func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs []error) {
 	db.filesMu.Lock()
 	defer db.filesMu.Unlock()
 	var toRemove struct {
