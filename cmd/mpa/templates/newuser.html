@@ -9,6 +9,14 @@
 	<link rel="icon" href="/static/favicon.png" />
     </head>
     <body>
+	<nav>
+	    <div class="brand">
+		<a href="/" class="pseudo button">Album</a>
+	    </div>
+	    <div class="menu">
+		<a class="pseudo button" href="/new/album">{{tr "New album"}}</a>
+	    </div>
+	</nav>
 	<div class="centering">
 	    <form action="/new/user" method="post" autocomplete="off">
 		{{/* above autocomplete="off" for Firefox, "new-password" for Chrome, "display: none" for Firefox 40 (Android) */}}

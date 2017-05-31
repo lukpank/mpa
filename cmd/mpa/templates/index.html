@@ -3,7 +3,7 @@
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Albums</title>
+	<title>{{tr "Albums"}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
 	<link rel="icon" href="/static/favicon.png" />
@@ -11,15 +11,19 @@
     <body>
 	<nav>
 	    <div class="brand">
-		<a href="/" class="pseudo button icon-picture">Album</a>
+		<a href="/" class="pseudo button">{{tr "Albums"}}</a>
 	    </div>
 	    <div class="menu">
-		<a class="pseudo button" href="/new">New album</a>
+		<a class="pseudo button" href="/new/album">{{tr "New album"}}</a>
 	    </div>
 	</nav>
 	<p>&nbsp;</p>
 	<main>
-	    <div class="full flex two three-600 six-1200">
+	    <div class="index">
+		<ul>
+		    <li><a href="/albums">{{tr "All albums"}}</a></li>
+		    <li><a href="/password">{{tr "title|Change password"}}</a></li>
+		</ul>
 	    </div>
 	</main>
     </body>

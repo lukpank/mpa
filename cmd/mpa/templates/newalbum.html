@@ -3,7 +3,7 @@
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>New album</title>
+	<title>{{tr "New album"}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
 	<script src="/static/mpa.js"></script>
@@ -11,14 +11,17 @@
     </head>
     <body>
 	<nav>
+	    <div class="brand">
+		<a href="/" class="pseudo button">{{tr "Albums"}}</a>
+	    </div>
 	    <!-- responsive-->
 	    <input id="bmenu" type="checkbox" class="show">
 	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
 
 	    <div class="menu">
-		<input type="text" id="albumName" placeholder="Album name" style="width: 20em">
+		<input type="text" id="albumName" placeholder='{{tr "Album name"}}' style="width: 20em">
 		<div class="hidden" id="progress"><div class="percent" id="percent" style="width: 0%">&nbsp;</div></div>
-		<button class="button" onclick="obj.submit()">Submit</button>
+		<button class="button" onclick="obj.submit()">{{tr "Upload"}}</button>
 	    </div>
 	</nav>
 	<p>&nbsp;</p>

@@ -43,7 +43,7 @@ div.centering {
 
 @media all and (max-width: 600px) {
     div.centering {
-	margin: 3em auto;
+	margin: 4em auto;
     }
 }
 
@@ -99,3 +99,8 @@ div.login-error {
     border-bottom-width: 0;
 }
 
+.index {
+    width: 90%;
+    max-width: 900px;
+    margin: auto;
+}

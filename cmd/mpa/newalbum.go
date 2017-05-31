@@ -24,12 +24,7 @@ import (
 )
 
 func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Lang string
-	}{s.lang}
-	if err := s.t.ExecuteTemplate(w, "new.html", &data); err != nil {
-		log.Println(err)
-	}
+	s.executeTemplate(w, "newalbum.html", &struct{ Lang string }{s.lang}, http.StatusOK)
 }
 
 func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {

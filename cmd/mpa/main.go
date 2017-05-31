@@ -49,8 +49,8 @@ func main() {
 		log.Fatal("error: ", err)
 	}
 	http.HandleFunc("/", s.authenticate(s.ServeIndex))
-	http.HandleFunc("/new", s.authenticate(s.ServeNewAlbum))
-	http.HandleFunc("/api/new", s.authenticate(s.ServeApiNewAlbum))
+	http.HandleFunc("/new/album", s.authenticate(s.ServeNewAlbum))
+	http.HandleFunc("/api/new/album", s.authenticate(s.ServeApiNewAlbum))
 	http.HandleFunc("/albums/", s.authenticate(s.ServeAlbums))
 	http.HandleFunc("/album/", s.authenticate(s.ServeAlbum))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
@@ -110,7 +110,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		"templates/album.html",
 		"templates/index.html",
 		"templates/login.html",
-		"templates/new.html",
+		"templates/newalbum.html",
 		"templates/newuser.html",
 		"templates/newuserok.html",
 		"templates/password.html",
