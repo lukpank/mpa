@@ -111,15 +111,11 @@ func (s *server) setSessionCookie(w http.ResponseWriter, sid string, duration in
 }
 
 func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg string, fullPage bool) {
-	err := s.t.ExecuteTemplate(w, "login.html", struct {
+	s.executeTemplate(w, "login.html", &struct {
 		Lang              string
 		Redirect, Message string
 		FullPage          bool
-	}{s.lang, path, msg, fullPage})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	}{s.lang, path, msg, fullPage}, http.StatusOK)
 }
 
 func (s *server) serveLogout(w http.ResponseWriter, r *http.Request) {

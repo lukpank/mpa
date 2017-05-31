@@ -85,7 +85,5 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {
-		log.Println(err)
-	}
+	s.executeTemplate(w, "album.html", &data, http.StatusOK)
 }

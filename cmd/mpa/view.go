@@ -62,7 +62,5 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		return
 	}
-	if err := s.t.ExecuteTemplate(w, "view.html", &data); err != nil {
-		log.Println(err)
-	}
+	s.executeTemplate(w, "view.html", &data, http.StatusOK)
 }

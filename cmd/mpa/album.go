@@ -70,7 +70,5 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		return
 	}
-	if err := s.t.ExecuteTemplate(w, "album.html", &data); err != nil {
-		log.Println(err)
-	}
+	s.executeTemplate(w, "album.html", &data, http.StatusOK)
 }

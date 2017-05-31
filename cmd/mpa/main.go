@@ -133,9 +133,7 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Lang string
 	}{s.lang}
-	if err := s.t.ExecuteTemplate(w, "index.html", &data); err != nil {
-		log.Println(err)
-	}
+	s.executeTemplate(w, "index.html", &data, http.StatusOK)
 }
 
 func (s *server) executeTemplate(w http.ResponseWriter, name string, data interface{}, code int) {
