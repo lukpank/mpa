@@ -63,6 +63,15 @@ div.centering {
 
 div.login-error {
     background: #ff4136;
+    border-bottom-width: 0;
+}
+
+.stack.header {
+    padding: 0.3em;
+    background: #eee;
+    color: #888;
+    border: 1px solid #bbb;
+    border-bottom-width: 0;
 }
 
 .label.full {

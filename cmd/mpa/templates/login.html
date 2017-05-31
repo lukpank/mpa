@@ -13,6 +13,7 @@
 	    <form action="/login" method="post">
 		<input type="hidden" name="redirect" value="{{.Redirect}}">
 		<div>
+		    <div class="stack header">{{tr "Login required"}}</div>
 		    <input class="stack" type="text" name="login" placeholder='{{tr "Login"}}' autofocus>
 		    <input class="stack" type="password" name="password" placeholder='{{tr "Password"}}'>
 		    {{with .Message}}

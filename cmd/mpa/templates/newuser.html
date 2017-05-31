@@ -3,7 +3,7 @@
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Add user</title>
+	<title>{{tr "New user"}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css" />
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css" />
 	<link rel="icon" href="/static/favicon.png" />
@@ -14,6 +14,7 @@
 		{{/* above autocomplete="off" for Firefox, "new-password" for Chrome, "display: none" for Firefox 40 (Android) */}}
 		<input type="password" style="display: none">
 		<div>
+		    <div class="stack header">{{tr "New user"}}</div>
 		    <input class="stack" type="text" name="login" value="{{.Login}}" placeholder='{{tr "Login"}}' autofocus>
 		    {{with .LoginMsg}}
 		    <div class="stack login-error"><span class="label error">{{.}}</span></div>
