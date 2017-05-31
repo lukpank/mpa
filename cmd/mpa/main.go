@@ -58,6 +58,7 @@ func main() {
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.serveLogin)
+	http.HandleFunc("/password", s.authenticate(s.ServeChangePassword))
 	http.HandleFunc("/new/user", s.authenticate(s.authorizeAsAdmin(s.ServeNewUser)))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 	http.HandleFunc("/favicon.ico", ServeFavicon)
@@ -105,7 +106,15 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		tr = translations["en"]
 	}
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
-	t, err := template.New("html").Funcs(m).ParseFiles("templates/album.html", "templates/index.html", "templates/login.html", "templates/new.html", "templates/newuser.html", "templates/newuserok.html", "templates/view.html")
+	t, err := template.New("html").Funcs(m).ParseFiles(
+		"templates/album.html",
+		"templates/index.html",
+		"templates/login.html",
+		"templates/new.html",
+		"templates/newuser.html",
+		"templates/newuserok.html",
+		"templates/password.html",
+		"templates/view.html")
 	if err != nil {
 		return nil, err
 	}
