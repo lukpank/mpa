@@ -41,14 +41,11 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 			}
 			return
 		}
-		if api {
-			w.WriteHeader(http.StatusUnauthorized)
-		}
 		path := r.URL.Path
 		if r.URL.RawQuery != "" {
 			path += "?" + r.URL.RawQuery
 		}
-		s.loginPage(w, r, path, "", !api)
+		s.loginPage(w, r, path, "", !api, http.StatusUnauthorized)
 	}
 }
 
@@ -90,8 +87,7 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	uid, admin, err := s.db.AuthenticateUser(login, []byte(password))
 	if err != nil {
 		if err == ErrAuth {
-			w.WriteHeader(http.StatusUnauthorized)
-			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true)
+			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true, http.StatusUnauthorized)
 		} else {
 			s.internalError(w, err, s.tr("Authentication error"))
 		}
@@ -111,12 +107,12 @@ func (s *server) setSessionCookie(w http.ResponseWriter, sid string, duration in
 	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Path: "/", Value: sid, MaxAge: duration, Expires: expires, Secure: s.secure})
 }
 
-func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg string, fullPage bool) {
+func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg string, fullPage bool, code int) {
 	s.executeTemplate(w, "login.html", &struct {
 		Lang              string
 		Redirect, Message string
 		FullPage          bool
-	}{s.lang, path, msg, fullPage}, http.StatusOK)
+	}{s.lang, path, msg, fullPage}, code)
 }
 
 func (s *server) ServeLogout(w http.ResponseWriter, r *http.Request) {
