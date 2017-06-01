@@ -45,10 +45,12 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Title  string
+		URL    string
 		Lang   string
 		Photos []img
 	}{
 		Title: title,
+		URL:   pathQuery(r),
 		Lang:  s.lang,
 	}
 	for rows.Next() {

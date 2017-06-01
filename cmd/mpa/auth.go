@@ -6,6 +6,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -74,7 +75,7 @@ func (s *server) SessionData(r *http.Request) (SessionData, error) {
 	return s.s.SessionData(cookie.Value)
 }
 
-func (s *server) serveLogin(w http.ResponseWriter, r *http.Request) {
+func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		s.error(w, s.tr("Method not allowed"), s.tr("Please use POST."), http.StatusMethodNotAllowed)
 		return
@@ -118,7 +119,13 @@ func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg str
 	}{s.lang, path, msg, fullPage}, http.StatusOK)
 }
 
-func (s *server) serveLogout(w http.ResponseWriter, r *http.Request) {
+func (s *server) ServeLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		log.Println(err)
+	} else {
+		s.s.Remove(cookie.Value)
+	}
 	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Path: "/", MaxAge: -1, Secure: s.secure})
 	path := strings.TrimPrefix(r.URL.Path, "/logout")
 	if len(path) == len(r.URL.Path) || path == "" {

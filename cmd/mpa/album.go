@@ -44,10 +44,12 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Title  string
+		URL    string
 		Lang   string
 		Photos []img
 	}{
 		Title: name,
+		URL:   pathQuery(r),
 		Lang:  s.lang,
 	}
 	for rows.Next() {
@@ -71,4 +73,11 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.executeTemplate(w, "album.html", &data, http.StatusOK)
+}
+
+func pathQuery(r *http.Request) string {
+	if q := r.URL.RawQuery; q != "" {
+		return r.URL.Path + "?" + q
+	}
+	return r.URL.Path
 }
