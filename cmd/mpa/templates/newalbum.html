@@ -26,6 +26,7 @@
 	<p>&nbsp;</p>
 
 	<main>
+	    <article id="result"></article>
 	    <div class="full flex two three-600 six-1200" id="images">
 		<div id="multi">
 		    <label class="dropimage">
@@ -52,9 +53,27 @@
 		</footer>
 	    </article>
 	</div>
+	<div class="modal">
+	    <input id="modal_err" type="checkbox"/>
+	    <label for="modal_err" class="overlay"></label>
+	    <article>
+		<header>
+		    <h4>{{tr "Error"}}</h4>
+		    <label for="modal_err" class="close">&times;</label>
+		</header>
+		<section class="content">
+		    <p id="error">&nbsp;</p>
+		</section>
+		<footer>
+		    <label for="modal_err" class="button">{{tr "Close"}}</label>
+		</footer>
+	    </article>
+	</div>
 
 	<script>
-	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}}, {{tr "Please specify album name and add at least one image"}});
+	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}},
+				      {{tr "Please specify album name and add at least one image"}},
+				      {{tr "Connection error"}});
 	</script>
     </body>
 </html>

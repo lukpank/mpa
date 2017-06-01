@@ -1,0 +1,20 @@
+<h2>{{tr "New album created"}}</h2>
+
+<p>{{.Message}}</p>
+
+<p><a href="{{.Href}}">{{tr "See the new album"}}</a></p>
+
+{{with .Problems}}
+<h2>{{tr "Problems"}}</h2>
+
+<table class="primary">
+    <thead>
+	<tr><th>{{tr "File"}}</th> <th>{{tr "Problem"}}</th></tr>
+    </thead>
+    <tbody>
+	{{range .}}
+	<tr><td>{{.FileName}}</td><td>{{.Msg}}</td></tr>
+	{{end}}
+    </tbody>
+</table>
+{{end}}

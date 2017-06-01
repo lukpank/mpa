@@ -56,10 +56,12 @@ function progress() {
 	};
 }
 
-function setupDropImage(clickMsg, noSubmitMsg) {
+function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
+	var modalErr = document.getElementById('modal_err');
+	var error = document.getElementById("error");
 	var description = document.getElementById('description');
 	var prog = new progress();
 	this.images = [];
@@ -90,6 +92,10 @@ function setupDropImage(clickMsg, noSubmitMsg) {
 		modal1.checked = true; 
 		return false;
 	};
+	function showError(msg) {
+		error.firstChild.nodeValue = msg;
+		modalErr.checked = true;
+	}
 	this.submit = function() {
 		var meta = {name: document.getElementById("albumName").value, descriptions: {}};
 		var d = new FormData();
@@ -105,14 +111,14 @@ function setupDropImage(clickMsg, noSubmitMsg) {
 		}
 		d.append("metadata", JSON.stringify(meta));
 		if (meta.name == "" || !ok) {
-			alert(noSubmitMsg);
+			showError(noSubmitMsg);
 			return;
 		}
 		prog.show();
 		var r = new XMLHttpRequest();
 		r.open("POST", "/api/new/album");
 		r.onerror = function() {
-			console.log("Connection error");
+			showError(connectionError);
 		};
 		r.upload.addEventListener("progress", function(e) {
 			if (e.lengthComputable) {
@@ -120,7 +126,12 @@ function setupDropImage(clickMsg, noSubmitMsg) {
 			}
 		});
 		r.onload = function() {
-			console.log("onload: " + r.status);
+			if (r.status == 200) {
+				document.getElementById("result").innerHTML = r.response;
+				images.className = "hidden";
+			} else {
+				showError(r.response);
+			}
 		};
 		r.send(d);
 	};

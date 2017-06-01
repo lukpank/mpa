@@ -112,6 +112,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		"templates/index.html",
 		"templates/login.html",
 		"templates/newalbum.html",
+		"templates/newalbumok.html",
 		"templates/newuser.html",
 		"templates/newuserok.html",
 		"templates/password.html",

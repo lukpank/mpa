@@ -36,7 +36,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 	mr, err := r.MultipartReader()
 	if err != nil {
-		http.Error(w, s.tr("Bad request: error parsing form")+": ", http.StatusBadRequest)
+		http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
@@ -52,6 +52,8 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		Descriptions map[string]string
 	}
 	var files []*uploadInfo
+	var imgCnt int
+	var errs []imageError
 	m := make(map[string]*uploadInfo)
 	for {
 		p, err := mr.NextPart()
@@ -65,7 +67,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		formName := p.FormName()
 		if formName == "metadata" {
 			if err := json.NewDecoder(p).Decode(&meta); err != nil {
-				http.Error(w, s.tr("Internal server error"), http.StatusBadRequest)
+				http.Error(w, s.tr("Error parsing metadata"), http.StatusBadRequest)
 				log.Println(err)
 				return
 			}
@@ -74,29 +76,30 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		idx := strings.TrimPrefix(formName, "image:")
 		if len(idx) == len(formName) {
-			http.Error(w, s.tr("Bad request: error parsing form"), http.StatusBadRequest)
+			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 			log.Println("unexpected form name " + formName)
 			return
 		}
 
+		imgCnt++
 		filename := filepath.Join(tempDir, strconv.Itoa(len(files)))
 		n, sha256, err := writeFileSha256(filename, p)
 		if err != nil {
-			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
-			log.Println(err)
-			return
+			errs = append(errs, imageError{err, p.FileName(), s.tr("Internal server error")})
+			m[idx] = &uploadInfo{}
+			continue
 		}
 		isPort, err := isPortrait(filename)
 		if err != nil {
-			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
-			log.Println(err)
-			return
+			errs = append(errs, imageError{err, p.FileName(), s.tr("Could not determine image size")})
+			m[idx] = &uploadInfo{}
+			continue
 		}
 		var created time.Time
 		t, err := exifDateTimeFromFile(filename)
 		if err != nil {
 			created = time.Now().UTC()
-			log.Println(err)
+			errs = append(errs, imageError{err, p.FileName(), s.tr("Could not determine image time, current time assumed")})
 		} else {
 			created = t
 		}
@@ -106,31 +109,53 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
 	}
 	if meta.Name == "" {
-		http.Error(w, s.tr("Bad request: name not specified"), http.StatusBadRequest)
-		log.Println("Bad request: name not specified")
+		http.Error(w, s.tr("Album name not specified"), http.StatusBadRequest)
+		log.Println("Bad request: Album name not specified")
 		return
 	}
 	if len(files) == 0 {
-		http.Error(w, s.tr("Bad request: no images specified"), http.StatusBadRequest)
-		log.Println("Bad request: no images specified")
+		if len(errs) > 0 {
+			http.Error(w, s.tr("No uploaded image was successfully processed"), http.StatusBadRequest)
+			log.Println("Bad request: no uploaded image was successfully processed")
+		} else {
+			http.Error(w, s.tr("No images uploaded"), http.StatusBadRequest)
+			log.Println("Bad request: no images uploaded")
+		}
 		return
 	}
 	files[0].isAlbumImage = true
 	for idx, descr := range meta.Descriptions {
 		inf := m[idx]
 		if m[idx] == nil {
-			http.Error(w, s.tr("Bad request: error parsing form"), http.StatusBadRequest)
+			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
 		inf.description = descr
 	}
-	if n, errs := s.db.AddAlbum(session.Uid, meta.Name, files); errs != nil {
+	n, albumID, errs2 := s.db.AddAlbum(session.Uid, meta.Name, files, s.tr)
+	errs = append(errs, errs2...)
+	if errs != nil {
 		log.Println("album: ", n)
-		for _, err := range errs {
-			log.Println(err)
+		for _, e := range errs {
+			fmt.Printf("%s: %s: %s\n", e.FileName, e.Msg, e.err)
 		}
 	}
+	if n == 0 {
+		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
+		return
+	}
+	msg := ""
+	if n == imgCnt {
+		msg = s.tr("All uploaded files added to the new album.")
+	} else {
+		msg = fmt.Sprintf(s.tr("%d out of %d uploaded files added to the new album."), n, imgCnt)
+	}
+	s.executeTemplate(w, "newalbumok.html", struct {
+		Message  string
+		Problems []imageError
+		Href     string
+	}{msg, errs, fmt.Sprintf("/album/%d", albumID)}, http.StatusOK)
 }
 
 type uploadInfo struct {
@@ -142,6 +167,12 @@ type uploadInfo struct {
 	isPortrait   bool
 	isAlbumImage bool
 	created      time.Time
+}
+
+type imageError struct {
+	err      error
+	FileName string
+	Msg      string
 }
 
 func isPortrait(filename string) (bool, error) {
@@ -157,8 +188,7 @@ func isPortrait(filename string) (bool, error) {
 	return cfg.Height > cfg.Width, nil
 }
 
-// AddAlarm (TODO) should also return error messages for end users
-func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs []error) {
+func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(string) string) (n int, albumID int64, errs []imageError) {
 	db.filesMu.Lock()
 	defer db.filesMu.Unlock()
 	var toRemove struct {
@@ -168,7 +198,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 	defer func() {
 		for _, fn := range toRemove.files {
 			if err := os.Remove(fn); err != nil {
-				errs = append(errs, err)
+				errs = append(errs, imageError{err, fn, ""})
 			}
 		}
 	}()
@@ -176,7 +206,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 		dirName := filepath.Join(db.imagesDir, inf.sha256[:3])
 		destFilename := filepath.Join(dirName, inf.sha256[3:])
 		if err := ensureDirExists(dirName, 0755); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			continue
 		}
 		_, err := os.Stat(destFilename)
@@ -186,11 +216,11 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 			continue
 		}
 		if !os.IsNotExist(err) {
-			errs = append(errs, err)
+			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			continue
 		}
 		if err := os.Rename(inf.tmpFileName, destFilename); err != nil {
-			errs = append(errs, err)
+			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			continue
 		}
 		fs = append(fs, inf)
@@ -199,7 +229,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 
 	tx, err := db.db.Begin()
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, imageError{err, "", tr("Internal server error")})
 		return
 	}
 	defer tx.Rollback()
@@ -207,12 +237,12 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 	r, err := tx.Exec("INSERT INTO albums (owner_id, created, modified, name) VALUES (?, ?, ?, ?)",
 		uid, now, now, name)
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, imageError{err, "", tr("Internal server error")})
 		return
 	}
-	albumID, err := r.LastInsertId()
+	albumID, err = r.LastInsertId()
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, imageError{err, "", tr("Internal server error")})
 		return
 	}
 	var imageID int64
@@ -221,25 +251,25 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo) (n int, errs
 		r, err := tx.Exec("INSERT INTO images (sha256sum, album_id, title, is_portrait, created, owner_file_name) VALUES (?, ?, ?, ?, ?, ?)",
 			inf.sha256, albumID, inf.description, inf.isPortrait, inf.created, inf.userFileName)
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			return
 		}
 		if inf.isAlbumImage {
 			imageID, err = r.LastInsertId()
 			isPortrait = inf.isPortrait
 			if err != nil {
-				errs = append(errs, err)
+				errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 				return
 			}
 		}
 	}
 	_, err = tx.Exec("UPDATE albums SET image_id=?, is_portrait=? WHERE aid=?", imageID, isPortrait, albumID)
 	if err != nil {
-		errs = append(errs, err)
+		errs = append(errs, imageError{err, "", tr("Internal server error")})
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		errs = append(errs, err)
+		errs = append(errs, imageError{err, "", tr("Internal server error")})
 		return
 	}
 	// transaction commited so we do not want to remove new files

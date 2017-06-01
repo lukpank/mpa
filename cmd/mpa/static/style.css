@@ -104,3 +104,7 @@ div.login-error {
     max-width: 900px;
     margin: auto;
 }
+
+article h2 {
+    padding-bottom: 0px;
+}
