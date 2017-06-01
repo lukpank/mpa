@@ -35,7 +35,8 @@ function setupViewMode(params) {
 				updateNav();
 			}
 		} else {
-			if (hidden) {
+			if (requestFullScreen()) {
+			} else if (hidden) {
 				nav.className = "";
 				hidden = false;
 			} else {
@@ -156,4 +157,19 @@ function setupDropImage(clickMsg, noSubmitMsg) {
 			obj.addImage(e.target.files[i]);
 		}
 	};
+}
+
+function requestFullScreen() {
+	var d = document.documentElement;
+	if (d.mozRequestFullScreen && !document.mozFullScreenElement) {
+		d.mozRequestFullScreen();
+		return true;
+	} else if (d.webkitRequestFullScreen && !document.webkitFullscreenElement) {
+		d.webkitRequestFullScreen();
+		return true;
+	} else if (d.msRequestFullscreen && !document.msFullscreenElement) {
+		d.msRequestFullscreen();
+		return true;
+	}
+	return false;
 }
