@@ -1,0 +1,23 @@
+<div class="modal">
+    <input id="modal_login" type="checkbox"/>
+    <label for="modal_login" class="overlay"></label>
+    <article>
+	<header>
+	    <h4>{{tr "Login required"}}</h4>
+	    <label for="modal_login" class="close">&times;</label>
+	</header>
+	<section id="login_stack" class="content">
+	    <input class="stack" type="text" id="login_name" placeholder='{{tr "Login"}}' autofocus>
+	    <input class="stack" type="password" id="password" placeholder='{{tr "Password"}}'>
+	</section>
+	<footer>
+	    <label for="modal_login" id="login_submit" class="button">{{tr "login|Submit"}}</label>
+	</footer>
+    </article>
+    <div id="connection_error" class="hidden">{{tr "Connection error"}}</div>
+    <div class="hidden">
+	<div id="login_error" class="stack login-error">
+	    <span id="login_msg" class="label error">&nbsp;</span>
+	</div>
+    </div>
+</div>

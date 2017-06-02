@@ -96,6 +96,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		error.firstChild.nodeValue = msg;
 		modalErr.checked = true;
 	}
+	var obj = this;
 	this.submit = function() {
 		var meta = {name: document.getElementById("albumName").value, descriptions: {}};
 		var d = new FormData();
@@ -129,13 +130,16 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 			if (r.status == 200) {
 				document.getElementById("result").innerHTML = r.response;
 				images.className = "hidden";
+			} else if (r.status == 401) {
+				document.getElementById("login").innerHTML = r.response;
+				document.getElementById("modal_login").checked = true;
+				document.getElementById("login_submit").onclick = function() { loginOnClick(function() { obj.submit(); }); };
 			} else {
 				showError(r.response);
 			}
 		};
 		r.send(d);
 	};
-	var obj = this;
 	this.addImage = function(file) {
 		var input = document.createElement("input");
 		input.setAttribute("title", clickMsg);
@@ -168,6 +172,43 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 			obj.addImage(e.target.files[i]);
 		}
 	};
+}
+
+function loginOnClick(callback) {
+	var login = document.getElementById("login");
+	var loginName = document.getElementById("login_name");
+	var password = document.getElementById("password");
+	var loginMsg = document.getElementById("login_msg");
+	var r = new XMLHttpRequest();
+	var loginError = document.getElementById("login_error");
+	var errorVisible = false;
+	function showError(msg) {
+		if (!errorVisible) {
+			document.getElementById("login_stack").appendChild(document.getElementById("login_error"));
+			errorVisible = true;
+		}
+		loginMsg.firstChild.nodeValue = msg;
+		document.getElementById("modal_login").checked = true;
+	}
+	r.open("POST", "/api/login");
+		r.onerror = function() {
+			showError(document.getElementById("connection_error").firstChild.nodeValue);
+		};
+	r.onload = function() {
+		if (r.status == 200) {
+			callback();
+		} else {
+			loginName.value = "";
+			password.value = "";
+			loginName.focus();
+			showError(r.response);
+		}
+	};
+	var data = new FormData();
+	data.append("login", loginName.value);
+	data.append("password", password.value);
+	r.send(data);
+	return false;
 }
 
 function requestFullScreen() {

@@ -58,6 +58,7 @@ func main() {
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.ServeLogin)
+	http.HandleFunc("/api/login", s.ServeAPILogin)
 	http.HandleFunc("/logout/", s.ServeLogout)
 	http.HandleFunc("/password", s.authenticate(s.ServeChangePassword))
 	http.HandleFunc("/new/user", s.authenticate(s.authorizeAsAdmin(s.ServeNewUser)))
@@ -111,6 +112,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		"templates/album.html",
 		"templates/index.html",
 		"templates/login.html",
+		"templates/loginapi.html",
 		"templates/newalbum.html",
 		"templates/newalbumok.html",
 		"templates/newuser.html",

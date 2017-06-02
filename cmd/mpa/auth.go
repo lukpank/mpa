@@ -102,13 +102,48 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
+func (s *server) ServeAPILogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, s.tr("Method not allowed"), http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseMultipartForm(4096); err != nil {
+		http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
+		return
+	}
+	login := r.PostForm.Get("login")
+	password := r.PostForm.Get("password")
+	uid, admin, err := s.db.AuthenticateUser(login, []byte(password))
+	if err != nil {
+		if err == ErrAuth {
+			http.Error(w, s.tr("Incorrect login or password."), http.StatusUnauthorized)
+		} else {
+			log.Println(err)
+			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
+		}
+		return
+	}
+	sid, err := s.s.NewSession(sessionDuration*time.Second, SessionData{uid, admin})
+	if err != nil {
+		log.Println(err)
+		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
+		return
+	}
+	s.setSessionCookie(w, sid, 2*sessionDuration)
+	w.WriteHeader(http.StatusOK) // for status logging to work properly
+}
+
 func (s *server) setSessionCookie(w http.ResponseWriter, sid string, duration int) {
 	expires := time.Now().Add(time.Duration(duration) * time.Second)
 	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Path: "/", Value: sid, MaxAge: duration, Expires: expires, Secure: s.secure})
 }
 
 func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg string, fullPage bool, code int) {
-	s.executeTemplate(w, "login.html", &struct {
+	t := "login.html"
+	if !fullPage {
+		t = "loginapi.html"
+	}
+	s.executeTemplate(w, t, &struct {
 		Lang              string
 		Redirect, Message string
 		FullPage          bool
