@@ -19,8 +19,26 @@
 	    </div>
 	</nav>
 	<img id="view" class="view" src="">
+
+	<div class="modal">
+	    <input id="modal_err" type="checkbox"/>
+	    <label for="modal_err" class="overlay"></label>
+	    <article>
+		<header>
+		    <h4>{{tr "Error"}}</h4>
+		    <label for="modal_err" class="close">&times;</label>
+		</header>
+		<section class="content">
+		    <p id="error">&nbsp;</p>
+		</section>
+		<footer>
+		    <label for="modal_err" class="button">{{tr "Close"}}</label>
+		</footer>
+	    </article>
+	</div>
+
 	<script>
-	 var params = {idx: 0, photos: {{.Photos}}};
+	 var params = {idx: 0, photos: {{.Photos}}, connectionError: {{tr "Connection error"}}};
 	 setupViewMode(params);
 	</script>
     </body>

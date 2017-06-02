@@ -20,8 +20,17 @@ function setupViewMode(params) {
 	}
 	updateNav();
 	var next = new Image();
+	function handleError(idx) {
+		var r = new XMLHttpRequest();
+		r.open("HEAD", "/image/" + p.photos[idx]);
+		r.onerror = function() {
+			showError(p.connectionError);
+		};
+		r.send();
+	}
 	function showImage(idx) {
 		var src = "/image/" + p.photos[idx];
+		next.onerror = function() { handleError(idx); };
 		next.onload = function() {
 			p.idx = idx;
 			view.src = src;
@@ -62,12 +71,15 @@ function progress() {
 	};
 }
 
+function showError(msg) {
+	document.getElementById("error").firstChild.nodeValue = msg;
+	document.getElementById('modal_err').checked = true;
+}
+
 function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
-	var modalErr = document.getElementById('modal_err');
-	var error = document.getElementById("error");
 	var description = document.getElementById('description');
 	var prog = new progress();
 	this.images = [];
@@ -98,10 +110,6 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		modal1.checked = true; 
 		return false;
 	};
-	function showError(msg) {
-		error.firstChild.nodeValue = msg;
-		modalErr.checked = true;
-	}
 	var obj = this;
 	this.submit = function() {
 		var meta = {name: document.getElementById("albumName").value, descriptions: {}};
