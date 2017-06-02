@@ -19,20 +19,26 @@ function setupViewMode(params) {
 		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.photos.length;
 	}
 	updateNav();
-	var hidden = true;
+	var next = new Image();
+	function showImage(idx) {
+		var src = "/image/" + p.photos[idx];
+		next.onload = function() {
+			p.idx = idx;
+			view.src = src;
+			updateNav();
+		};
+		next.src = src;
+	}
+ 	var hidden = true;
 	view.addEventListener("click", function(event) {
 		var b = view.getBoundingClientRect();
 		if ((event.clientX - b.left) > 2*b.width/3) {
 			if (p.idx < p.photos.length - 1) {
-				p.idx++;
-				view.src = "/image/" + p.photos[p.idx];
-				updateNav();
+				showImage(p.idx + 1);
 			}
 		} else if ((event.clientX - b.left) < b.width/3) {
 			if (p.idx > 0) {
-				p.idx--;
-				view.src = "/image/" + p.photos[p.idx];
-				updateNav();
+				showImage(p.idx - 1);
 			}
 		} else {
 			if (requestFullScreen()) {
