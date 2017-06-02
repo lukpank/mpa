@@ -22,10 +22,8 @@ function setupViewMode(params) {
 	var next = new Image();
 	function handleError(idx) {
 		var r = new XMLHttpRequest();
-		r.open("HEAD", "/image/" + p.photos[idx]);
-		r.onerror = function() {
-			showError(p.connectionError);
-		};
+		r.open("GET", "/api/image/" + p.photos[idx]);
+		setupHTTPEventListeners(r, p.connectionError, function() { showImage(idx); });
 		r.send();
 	}
 	function showImage(idx) {
@@ -74,6 +72,24 @@ function progress() {
 function showError(msg) {
 	document.getElementById("error").firstChild.nodeValue = msg;
 	document.getElementById('modal_err').checked = true;
+}
+
+function setupHTTPEventListeners(r, connectionError, callback) {
+	r.onerror = function() {
+		showError(connectionError);
+	};
+	r.onload = function() {
+		if (r.status == 200) {
+			document.getElementById("result").innerHTML = r.response;
+			images.className = "hidden";
+		} else if (r.status == 401) {
+			document.getElementById("login").innerHTML = r.response;
+			document.getElementById("modal_login").checked = true;
+			document.getElementById("login_submit").onclick = function() { loginOnClick(function() { callback(); }); };
+		} else {
+			showError(r.response);
+		}
+	};
 }
 
 function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
@@ -132,26 +148,12 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		prog.show();
 		var r = new XMLHttpRequest();
 		r.open("POST", "/api/new/album");
-		r.onerror = function() {
-			showError(connectionError);
-		};
+		setupHTTPEventListeners(r, connectionError, function() { obj.submit(); });
 		r.upload.addEventListener("progress", function(e) {
 			if (e.lengthComputable) {
 				prog.update(e.loaded, e.total);
 			}
 		});
-		r.onload = function() {
-			if (r.status == 200) {
-				document.getElementById("result").innerHTML = r.response;
-				images.className = "hidden";
-			} else if (r.status == 401) {
-				document.getElementById("login").innerHTML = r.response;
-				document.getElementById("modal_login").checked = true;
-				document.getElementById("login_submit").onclick = function() { loginOnClick(function() { obj.submit(); }); };
-			} else {
-				showError(r.response);
-			}
-		};
 		r.send(d);
 	};
 	this.addImage = function(file) {

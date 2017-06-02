@@ -22,7 +22,20 @@ func (s *server) ServeImage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Page not found"), http.StatusNotFound)
 		return
 	}
-	s.servePreview(w, r, id, ".1")
+	if filename, ok := s.ensurePreview(w, r, id, ".1"); ok {
+		http.ServeFile(w, r, filename)
+	}
+}
+
+func (s *server) ServeAPIImage(w http.ResponseWriter, r *http.Request) {
+	id, err := idFromPath(r.URL.Path, "/api/image/")
+	if err != nil {
+		http.Error(w, s.tr("Page not found"), http.StatusNotFound)
+		return
+	}
+	if _, ok := s.ensurePreview(w, r, id, ".1"); ok {
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func (s *server) ServePreview(w http.ResponseWriter, r *http.Request) {
@@ -31,37 +44,39 @@ func (s *server) ServePreview(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Page not found"), http.StatusNotFound)
 		return
 	}
-	s.servePreview(w, r, id, ".2")
+	if filename, ok := s.ensurePreview(w, r, id, ".2"); ok {
+		http.ServeFile(w, r, filename)
+	}
 }
 
-func (s *server) servePreview(w http.ResponseWriter, r *http.Request, id int64, ext string) {
+func (s *server) ensurePreview(w http.ResponseWriter, r *http.Request, id int64, ext string) (string, bool) {
 	var sha256sum string
 	err := s.db.db.QueryRow("SELECT sha256sum FROM images where iid=?", id).Scan(&sha256sum)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, s.tr("Page not found"), http.StatusNotFound)
-			return
+			return "", false
 		}
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		log.Println(err)
-		return
+		return "", false
 	}
 	filename := filepath.Join(s.db.previewDir, sha256sum[:3], sha256sum[3:]+ext)
 	if _, err := os.Stat(filename); err != nil {
 		if !os.IsNotExist(err) {
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			log.Println(err)
-			return
+			return "", false
 		}
 		result := make(chan error)
 		s.preview <- previewRequest{id, sha256sum, result}
 		if err = <-result; err != nil {
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			log.Println(err)
-			return
+			return "", false
 		}
 	}
-	http.ServeFile(w, r, filename)
+	return filename, true
 }
 
 type previewRequest struct {

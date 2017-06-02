@@ -56,6 +56,7 @@ func main() {
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
 	http.HandleFunc("/view/", s.authenticate(s.ServeView))
 	http.HandleFunc("/image/", s.authenticate(s.ServeImage))
+	http.HandleFunc("/api/image/", s.authenticate(s.ServeImage))
 	http.HandleFunc("/image/orig/", s.authenticate(s.ServeImageOrig))
 	http.HandleFunc("/login", s.ServeLogin)
 	http.HandleFunc("/api/login", s.ServeAPILogin)
