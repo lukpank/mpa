@@ -23,7 +23,7 @@ function setupViewMode(params) {
 	function handleError(idx) {
 		var r = new XMLHttpRequest();
 		r.open("GET", "/api/image/" + p.photos[idx]);
-		setupHTTPEventListeners(r, p.connectionError, function() { showImage(idx); });
+		setupHTTPEventListeners(r, p.connectionError, function() { showImage(idx); }, null);
 		r.send();
 	}
 	function showImage(idx) {
@@ -70,6 +70,7 @@ function progress() {
 	var prog = document.getElementById('progress');
 	var percent = document.getElementById('percent');
 	this.show = function() { prog.className = "progress"; };
+	this.hide = function() { prog.className = "hidden"; percent.style.width = "0%"; };
 	this.update = function(part, total) {
 		percent.style.width = (100 * part / total) + "%";
 	};
@@ -80,20 +81,24 @@ function showError(msg) {
 	document.getElementById('modal_err').checked = true;
 }
 
-function setupHTTPEventListeners(r, connectionError, callback) {
+function setupHTTPEventListeners(r, connectionError, callback, onResponse) {
 	r.onerror = function() {
 		showError(connectionError);
+		if (onResponse != null) {
+			onResponse(null);
+		}
 	};
 	r.onload = function() {
 		if (r.status == 200) {
-			document.getElementById("result").innerHTML = r.response;
-			images.className = "hidden";
 		} else if (r.status == 401) {
 			document.getElementById("login").innerHTML = r.response;
 			document.getElementById("modal_login").checked = true;
 			document.getElementById("login_submit").onclick = function() { loginOnClick(function() { callback(); }); };
 		} else {
 			showError(r.response);
+		}
+		if (onResponse != null) {
+			onResponse(r.status);
 		}
 	};
 }
@@ -103,6 +108,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
 	var description = document.getElementById('description');
+	var upload = document.getElementById("upload");
 	var prog = new progress();
 	this.images = [];
 	this.modalIdx = 0;
@@ -151,10 +157,22 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 			showError(noSubmitMsg);
 			return;
 		}
+		upload.disabled = true;
 		prog.show();
 		var r = new XMLHttpRequest();
 		r.open("POST", "/api/new/album");
-		setupHTTPEventListeners(r, connectionError, function() { obj.submit(); });
+		setupHTTPEventListeners(
+			r, connectionError, function() { obj.submit(); },
+			function(status) {
+				if (status == 200) {
+					document.getElementById("result").innerHTML = r.response;
+					images.className = "hidden";
+					document.getElementById("bmenu").checked = false;
+				} else {
+					upload.disabled = false;
+					prog.hide();
+				}
+			});
 		r.upload.addEventListener("progress", function(e) {
 			if (e.lengthComputable) {
 				prog.update(e.loaded, e.total);
