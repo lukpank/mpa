@@ -33,17 +33,18 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		api := strings.HasPrefix(r.URL.Path, "/api/")
-		if err != nil && err != ErrAuth && err != http.ErrNoCookie {
-			if api {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			} else {
-				s.internalError(w, err, s.tr("Authentication error"))
-			}
-			return
-		}
 		path := r.URL.Path
 		if r.URL.RawQuery != "" {
 			path += "?" + r.URL.RawQuery
+		}
+		if err != nil && err != ErrAuth && err != http.ErrNoCookie {
+			if api {
+				log.Println(err)
+				http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
+			} else {
+				s.loginPage(w, r, path, s.tr("Internal server error"), !api, http.StatusInternalServerError)
+			}
+			return
 		}
 		s.loginPage(w, r, path, "", !api, http.StatusUnauthorized)
 	}
@@ -74,7 +75,7 @@ func (s *server) SessionData(r *http.Request) (SessionData, error) {
 
 func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		s.error(w, s.tr("Method not allowed"), s.tr("Please use POST."), http.StatusMethodNotAllowed)
+		s.loginPage(w, r, "/", "", true, http.StatusUnauthorized)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
@@ -89,7 +90,8 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 		if err == ErrAuth {
 			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true, http.StatusUnauthorized)
 		} else {
-			s.internalError(w, err, s.tr("Authentication error"))
+			log.Println(err)
+			s.loginPage(w, r, redirect, s.tr("Internal server error"), true, http.StatusUnauthorized)
 		}
 		return
 	}
@@ -146,8 +148,7 @@ func (s *server) loginPage(w http.ResponseWriter, r *http.Request, path, msg str
 	s.executeTemplate(w, t, &struct {
 		Lang              string
 		Redirect, Message string
-		FullPage          bool
-	}{s.lang, path, msg, fullPage}, code)
+	}{s.lang, path, msg}, code)
 }
 
 func (s *server) ServeLogout(w http.ResponseWriter, r *http.Request) {
