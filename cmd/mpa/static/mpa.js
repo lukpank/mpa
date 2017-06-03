@@ -27,6 +27,9 @@ function setupViewMode(params) {
 		r.send();
 	}
 	function showImage(idx) {
+		if (idx < 0 || idx >= p.photos.length) {
+			return;
+		}
 		var src = "/image/" + p.photos[idx];
 		next.onerror = function() { handleError(idx); };
 		next.onload = function() {
@@ -36,17 +39,20 @@ function setupViewMode(params) {
 		};
 		next.src = src;
 	}
+	document.onkeydown = function(e) {
+		if (e.keyCode == 32) {
+			showImage(p.idx + 1);
+		} else if (e.keyCode == 8) {
+			showImage(p.idx - 1);
+		}
+	};
  	var hidden = true;
 	view.addEventListener("click", function(event) {
 		var b = view.getBoundingClientRect();
 		if ((event.clientX - b.left) > 2*b.width/3) {
-			if (p.idx < p.photos.length - 1) {
-				showImage(p.idx + 1);
-			}
+			showImage(p.idx + 1);
 		} else if ((event.clientX - b.left) < b.width/3) {
-			if (p.idx > 0) {
-				showImage(p.idx - 1);
-			}
+			showImage(p.idx - 1);
 		} else {
 			if (requestFullScreen()) {
 			} else if (hidden) {
