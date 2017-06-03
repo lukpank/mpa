@@ -26,8 +26,9 @@ type session struct {
 }
 
 type SessionData struct {
-	Uid   int64
-	Admin bool
+	Uid                   int64
+	Admin                 bool
+	RequirePasswordChange bool
 }
 
 func NewSessions() *Sessions {
@@ -62,26 +63,28 @@ func (s *Sessions) NewSession(d time.Duration, data SessionData) (string, error)
 }
 
 // CheckSession returns error (ErrAuth) on invalid or expired sessions
-// and nil on a proper session.  Additionally the first return value
-// indicates whether a new session cookie should be send to the
-// client.  The session cookie send to the client should have max age
-// equal to twice the duration given as argument to NewSession so the
-// session is properly extended with following calls to CheckSession.
-func (s *Sessions) CheckSession(v string, d time.Duration) (bool, error) {
+// and nil on a proper session.  Additionally the first returned value
+// indicates whether a new session cookie should be send to the client
+// and the second returned value indicates whether the user should
+// change password before accessing the page.  The session cookie send
+// to the client should have max age equal to twice the duration given
+// as argument to NewSession so the session is properly extended with
+// following calls to CheckSession.
+func (s *Sessions) CheckSession(v string, d time.Duration) (bool, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.expire()
 	entry, present := s.m[v]
 	if !present {
-		return false, ErrAuth
+		return false, false, ErrAuth
 	}
 	now := time.Now()
 	entry.expires = now.Add(d)
 	if now.Sub(entry.client) > d/2 {
 		entry.client = now // we treat the new session cookie as already sent
-		return true, nil
+		return true, entry.data.RequirePasswordChange, nil
 	}
-	return false, nil
+	return false, entry.data.RequirePasswordChange, nil
 }
 
 func (s *Sessions) SessionData(v string) (SessionData, error) {
@@ -92,6 +95,17 @@ func (s *Sessions) SessionData(v string) (SessionData, error) {
 		return SessionData{}, ErrNoSuchSession
 	}
 	return d.data, nil
+}
+
+func (s *Sessions) SessionSetPasswordChanged(v string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, ok := s.m[v]
+	if !ok {
+		return ErrNoSuchSession
+	}
+	d.data.RequirePasswordChange = false
+	return nil
 }
 
 var ErrNoSuchSession = errors.New("no such session")

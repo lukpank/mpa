@@ -84,6 +84,7 @@ var plTranslation = translation{
 	"No images uploaded":                              "Nie przesłano żadnych obrazów",
 	"No uploaded image was successfully processed":    "Żaden z przesłanych obrazów nie został pomyślnie przetworzony",
 	"Only lowercase letters and digits allowed":       "Tylko małe liter y cyfry dozwolone",
+	"Password change required":                        "Wymagana zmiana hasła",
 	"Password must have at least 8 characters":        "Hasło musi mieć przynajmniej 8 znaków",
 	"Password": "Hasło",
 	"Please specify album name and add at least one image": "Proszę określić nazwę albumu i dodać co najmniej jeden obraz",

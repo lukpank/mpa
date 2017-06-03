@@ -83,6 +83,11 @@ func (s *server) ServeChangePassword(w http.ResponseWriter, r *http.Request) {
 		s.executeTemplate(w, "password.html", &d, http.StatusInternalServerError)
 		return
 	}
+	if session.RequirePasswordChange {
+		if err := s.SessionSetPasswordChanged(r); err != nil {
+			log.Println(err)
+		}
+	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -121,6 +126,6 @@ func (db *DB) ChangePassword(uid int64, password []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = db.db.Exec("UPDATE users SET passwordhash=? WHERE uid=?", p, uid)
+	_, err = db.db.Exec("UPDATE users SET passwordhash=?, require_password_change=0 WHERE uid=?", p, uid)
 	return err
 }

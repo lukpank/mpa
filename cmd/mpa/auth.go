@@ -21,32 +21,43 @@ var ErrAuth = errors.New("failed to authenticate")
 
 func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(sessionCookieName)
-		if err == nil {
-			var extend bool
-			if extend, err = s.s.CheckSession(cookie.Value, sessionDuration*time.Second); err == nil {
-				if extend {
-					s.setSessionCookie(w, cookie.Value, 2*sessionDuration)
-				}
-				h(w, r)
-				return
-			}
-		}
 		api := strings.HasPrefix(r.URL.Path, "/api/")
 		path := r.URL.Path
 		if r.URL.RawQuery != "" {
 			path += "?" + r.URL.RawQuery
 		}
-		if err != nil && err != ErrAuth && err != http.ErrNoCookie {
+
+		cookie, err := r.Cookie(sessionCookieName)
+		var extend, requirePasswordChange bool
+		if err == nil {
+			extend, requirePasswordChange, err = s.s.CheckSession(cookie.Value, sessionDuration*time.Second)
+		}
+		if err == ErrAuth || err == http.ErrNoCookie {
+			s.loginPage(w, r, path, "", !api, http.StatusUnauthorized)
+			return
+		}
+		if err != nil {
+			log.Println(err)
 			if api {
-				log.Println(err)
 				http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			} else {
 				s.loginPage(w, r, path, s.tr("Internal server error"), !api, http.StatusInternalServerError)
 			}
 			return
 		}
-		s.loginPage(w, r, path, "", !api, http.StatusUnauthorized)
+
+		if extend {
+			s.setSessionCookie(w, cookie.Value, 2*sessionDuration)
+		}
+		if requirePasswordChange {
+			if api {
+				http.Error(w, s.tr("Password change required"), http.StatusUnauthorized)
+			} else {
+				s.ServeChangePassword(w, r)
+			}
+		} else {
+			h(w, r)
+		}
 	}
 }
 
@@ -73,6 +84,14 @@ func (s *server) SessionData(r *http.Request) (SessionData, error) {
 	return s.s.SessionData(cookie.Value)
 }
 
+func (s *server) SessionSetPasswordChanged(r *http.Request) error {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return err
+	}
+	return s.s.SessionSetPasswordChanged(cookie.Value)
+}
+
 func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		s.loginPage(w, r, "/", "", true, http.StatusUnauthorized)
@@ -85,7 +104,7 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	login := r.PostForm.Get("login")
 	password := r.PostForm.Get("password")
 	redirect := r.PostForm.Get("redirect")
-	uid, admin, err := s.db.AuthenticateUser(login, []byte(password))
+	data, err := s.db.AuthenticateUser(login, []byte(password))
 	if err != nil {
 		if err == ErrAuth {
 			s.loginPage(w, r, redirect, s.tr("Incorrect login or password."), true, http.StatusUnauthorized)
@@ -95,7 +114,7 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sid, err := s.s.NewSession(sessionDuration*time.Second, SessionData{uid, admin})
+	sid, err := s.s.NewSession(sessionDuration*time.Second, data)
 	if err != nil {
 		s.internalError(w, err, s.tr("Authentication error"))
 		return
@@ -115,7 +134,7 @@ func (s *server) ServeAPILogin(w http.ResponseWriter, r *http.Request) {
 	}
 	login := r.PostForm.Get("login")
 	password := r.PostForm.Get("password")
-	uid, admin, err := s.db.AuthenticateUser(login, []byte(password))
+	data, err := s.db.AuthenticateUser(login, []byte(password))
 	if err != nil {
 		if err == ErrAuth {
 			http.Error(w, s.tr("Incorrect login or password."), http.StatusUnauthorized)
@@ -125,7 +144,7 @@ func (s *server) ServeAPILogin(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	sid, err := s.s.NewSession(sessionDuration*time.Second, SessionData{uid, admin})
+	sid, err := s.s.NewSession(sessionDuration*time.Second, data)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
