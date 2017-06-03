@@ -70,31 +70,21 @@ func (s *Sessions) NewSession(d time.Duration, data SessionData) (string, error)
 // to the client should have max age equal to twice the duration given
 // as argument to NewSession so the session is properly extended with
 // following calls to CheckSession.
-func (s *Sessions) CheckSession(v string, d time.Duration) (bool, bool, error) {
+func (s *Sessions) CheckSession(v string, d time.Duration) (bool, SessionData, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.expire()
 	entry, present := s.m[v]
 	if !present {
-		return false, false, ErrAuth
+		return false, SessionData{}, ErrNoSuchSession
 	}
 	now := time.Now()
 	entry.expires = now.Add(d)
 	if now.Sub(entry.client) > d/2 {
 		entry.client = now // we treat the new session cookie as already sent
-		return true, entry.data.RequirePasswordChange, nil
+		return true, entry.data, nil
 	}
-	return false, entry.data.RequirePasswordChange, nil
-}
-
-func (s *Sessions) SessionData(v string) (SessionData, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	d, ok := s.m[v]
-	if !ok {
-		return SessionData{}, ErrNoSuchSession
-	}
-	return d.data, nil
+	return false, entry.data, nil
 }
 
 func (s *Sessions) SessionSetPasswordChanged(v string) error {

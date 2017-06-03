@@ -135,9 +135,16 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 }
 
 func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
+	session, err := s.SessionData(r)
+	if err != nil {
+		log.Println(err)
+		s.internalError(w, err, s.tr("Session error"))
+		return
+	}
 	data := struct {
-		Lang string
-	}{s.lang}
+		Lang  string
+		Admin bool
+	}{s.lang, session.Admin}
 	s.executeTemplate(w, "index.html", &data, http.StatusOK)
 }
 

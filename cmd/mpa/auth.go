@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net/http"
@@ -17,6 +18,8 @@ const (
 	sessionCookieName = "mpa_sid"
 )
 
+type sessionKey struct{}
+
 var ErrAuth = errors.New("failed to authenticate")
 
 func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
@@ -28,11 +31,15 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		cookie, err := r.Cookie(sessionCookieName)
-		var extend, requirePasswordChange bool
+		var extend bool
+		var session SessionData
 		if err == nil {
-			extend, requirePasswordChange, err = s.s.CheckSession(cookie.Value, sessionDuration*time.Second)
+			extend, session, err = s.s.CheckSession(cookie.Value, sessionDuration*time.Second)
+			if err == nil {
+				r = r.WithContext(context.WithValue(r.Context(), sessionKey{}, session))
+			}
 		}
-		if err == ErrAuth || err == http.ErrNoCookie {
+		if err == ErrNoSuchSession || err == http.ErrNoCookie {
 			s.loginPage(w, r, path, "", !api, http.StatusUnauthorized)
 			return
 		}
@@ -49,7 +56,7 @@ func (s *server) authenticate(h http.HandlerFunc) http.HandlerFunc {
 		if extend {
 			s.setSessionCookie(w, cookie.Value, 2*sessionDuration)
 		}
-		if requirePasswordChange {
+		if session.RequirePasswordChange {
 			if api {
 				http.Error(w, s.tr("Password change required"), http.StatusUnauthorized)
 			} else {
@@ -68,8 +75,8 @@ func (s *server) authorizeAsAdmin(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		if err != nil && err != ErrAuth {
-			s.internalError(w, err, s.tr("Authorization error"))
+		if err != nil {
+			s.internalError(w, err, s.tr("Session error"))
 			return
 		}
 		s.error(w, s.tr("Authorization error"), s.tr("Admin account required"), http.StatusUnauthorized)
@@ -77,11 +84,11 @@ func (s *server) authorizeAsAdmin(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (s *server) SessionData(r *http.Request) (SessionData, error) {
-	cookie, err := r.Cookie(sessionCookieName)
-	if err != nil {
-		return SessionData{}, err
+	v := r.Context().Value(sessionKey{})
+	if session, ok := v.(SessionData); ok {
+		return session, nil
 	}
-	return s.s.SessionData(cookie.Value)
+	return SessionData{}, ErrNoSuchSession
 }
 
 func (s *server) SessionSetPasswordChanged(r *http.Request) error {
@@ -116,7 +123,7 @@ func (s *server) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	sid, err := s.s.NewSession(sessionDuration*time.Second, data)
 	if err != nil {
-		s.internalError(w, err, s.tr("Authentication error"))
+		s.internalError(w, err, s.tr("Session error"))
 		return
 	}
 	s.setSessionCookie(w, sid, 2*sessionDuration)
