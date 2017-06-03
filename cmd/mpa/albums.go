@@ -25,9 +25,9 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 	var rows *sql.Rows
 	var err error
 	if login != "" {
-		rows, err = s.db.db.Query("SELECT aid, image_id, is_portrait, name from albums WHERE owner_id=(SELECT uid FROM users WHERE login=?)", login)
+		rows, err = s.db.db.Query("SELECT aid, image_id, is_portrait, name from albums WHERE owner_id=(SELECT uid FROM users WHERE login=?) ORDER BY modified DESC", login)
 	} else {
-		rows, err = s.db.db.Query("SELECT aid, image_id, is_portrait, name from albums")
+		rows, err = s.db.db.Query("SELECT aid, image_id, is_portrait, name from albums ORDER BY modified DESC")
 		title = "Albums of user " + login
 	}
 	if err != nil {
