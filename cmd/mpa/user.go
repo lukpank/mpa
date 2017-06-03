@@ -101,7 +101,7 @@ func (s *server) createNewUser(w http.ResponseWriter, r *http.Request, d *loginD
 	if d.Admin {
 		adminLevel = 1
 	}
-	if err := s.db.AddUser(s.db.db, d.Login, d.Name, d.Surname, d.Email, adminLevel, randomPass); err != nil {
+	if err := s.db.AddUser(s.db.db, d.Login, d.Name, d.Surname, d.Email, adminLevel, true, randomPass); err != nil {
 		if err, ok := err.(sqlite3.Error); ok {
 			if err.Code == sqlite3.ErrConstraint && err.ExtendedCode == sqlite3.ErrConstraintUnique {
 				e := err.Error()

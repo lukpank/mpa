@@ -150,18 +150,45 @@ func (db *DB) askAddUser(tx Execer) error {
 	if err != nil {
 		return err
 	}
-	pass, err := speakeasy.Ask("Password: ")
+	var pass string
+	err = ErrPasswordNoMatch
+	for err == ErrPasswordNoMatch {
+		pass, err = askPasswordWithRetype()
+		if err == ErrPasswordNoMatch {
+			fmt.Println(ErrPasswordNoMatch)
+		}
+	}
 	if err != nil {
 		return err
+	}
+	return db.AddUser(tx, login, name, surname, email, 1, false, []byte(pass))
+}
+
+var ErrPasswordNoMatch = errors.New("Passwords do not match")
+
+func askPasswordWithRetype() (string, error) {
+	var pass string
+	var err error
+	ok := false
+	for !ok {
+		pass, err = speakeasy.Ask("Password: ")
+		if err != nil {
+			return "", err
+		}
+		var msg string
+		msg, ok = checkPasswordStrength(pass, func(s string) string { return s })
+		if !ok {
+			fmt.Println(msg)
+		}
 	}
 	repeat, err := speakeasy.Ask("Retype password: ")
 	if err != nil {
-		return err
+		return "", err
 	}
 	if repeat != pass {
-		return errors.New("failed to add user: passwords do not match")
+		return "", ErrPasswordNoMatch
 	}
-	return db.AddUser(tx, login, name, surname, email, 1, []byte(pass))
+	return pass, nil
 }
 
 func ask(sc *bufio.Scanner, prompt string) (string, error) {
@@ -232,12 +259,13 @@ type Execer interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
-func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel int, password []byte) error {
+func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel int, requirePasswordChange bool, password []byte) error {
 	p, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec("INSERT INTO users (login, name, surname, email, admin_level, passwordhash) VALUES (?, ?, ?, ?, ?, ?)", login, name, surname, email, adminLevel, p)
+	_, err = tx.Exec("INSERT INTO users (login, name, surname, email, admin_level, require_password_change, passwordhash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		login, name, surname, email, adminLevel, requirePasswordChange, p)
 	return err
 }
 
