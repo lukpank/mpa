@@ -9,6 +9,18 @@
 	<link rel="icon" href="/static/favicon.png" />
     </head>
     <body>
+	<nav>
+	    <div class="brand">
+		<a href="/" class="pseudo button">{{tr "Albums"}}</a>
+	    </div>
+	    {{/* responsive */}}
+	    <input id="bmenu" type="checkbox" class="show">
+	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
+	    <div class="menu">
+		<a class="pseudo button" href="/new/album">{{tr "New album"}}</a>
+		<a class="pseudo button" href="/logout/">{{tr "Logout"}}</a>
+	    </div>
+	</nav>
 	<div class="centering">
 	    <table class="primary">
 		<thead>
