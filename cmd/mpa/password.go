@@ -103,7 +103,7 @@ func checkPasswordStrength(password string, tr func(string) string) (string, boo
 		if unicode.IsDigit(r) {
 			digit = true
 		}
-		if unicode.IsPunct(r) {
+		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
 			punct = true
 		}
 	}
@@ -111,7 +111,7 @@ func checkPasswordStrength(password string, tr func(string) string) (string, boo
 		return tr("Password must have at least 8 characters"), false
 	}
 	if !lower || !upper || !digit || !punct {
-		return tr("Password must contain at least one lowercase letter, one uppercase letter, one digit and one punctuation character"), false
+		return tr("Password must contain at least one lowercase letter, one uppercase letter, one digit and one other character"), false
 	}
 	return "", true
 }

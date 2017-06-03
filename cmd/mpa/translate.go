@@ -106,5 +106,5 @@ var plTranslation = translation{
 	"title|Change password":                                "Zmiana hasła",
 	"yes": "tak",
 
-	"Password must contain at least one lowercase letter, one uppercase letter, one digit and one punctuation character": "Hasło musi zawierać co najmniej jedną małą literę, jedną dużą literę, jedną cyfrę i jeden znak interpukcyjny",
+	"Password must contain at least one lowercase letter, one uppercase letter, one digit and one other character": "Hasło musi zawierać co najmniej jedną małą literę, jedną dużą literę, jedną cyfrę i jeden inny znak",
 }
