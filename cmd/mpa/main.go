@@ -17,12 +17,19 @@ import (
 	"strings"
 )
 
+var Version = "mpa-0.1"
+
 func main() {
 	dbFileName := flag.String("f", "", "sqlite3 database file name")
 	dbInit := flag.String("init", "", "initialize the database file (argument is options such as lang=en or lang=pl)")
 	httpAddr := flag.String("http", ":8080", "HTTP listen address")
 	insecureCookie := flag.Bool("insecure_cookie", false, "if client should send cookie over plain HTTP connection")
+	version := flag.Bool("v", false, "show program version")
 	flag.Parse()
+	if *version {
+		fmt.Println(Version)
+		return
+	}
 	if *dbFileName == "" {
 		log.Fatal("option -f is requiered")
 	}
@@ -63,7 +70,7 @@ func main() {
 	http.HandleFunc("/logout/", s.ServeLogout)
 	http.HandleFunc("/password", s.authenticate(s.ServeChangePassword))
 	http.HandleFunc("/new/user", s.authenticate(s.authorizeAsAdmin(s.ServeNewUser)))
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(newDir("static/"))))
 	http.HandleFunc("/favicon.ico", ServeFavicon)
 	log.Fatal(http.ListenAndServe(*httpAddr, &logger{http.DefaultServeMux}))
 }
@@ -109,7 +116,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 		tr = translations["en"]
 	}
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
-	t, err := template.New("html").Funcs(m).ParseFiles(
+	t, err := newTemplate("html", m,
 		"templates/album.html",
 		"templates/index.html",
 		"templates/login.html",
