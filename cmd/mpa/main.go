@@ -143,8 +143,9 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Lang  string
+		Login string
 		Admin bool
-	}{s.lang, session.Admin}
+	}{s.lang, session.Login, session.Admin}
 	s.executeTemplate(w, "index.html", &data, http.StatusOK)
 }
 

@@ -75,6 +75,7 @@ var plTranslation = translation{
 	"Login":                                           "Login",
 	"Logout":                                          "Wyloguj",
 	"Method not allowed":                              "Niedozwolona metoda",
+	"My albums":                                       "Moje albumy",
 	"Name may not be empty":                           "Imię nie może być puste",
 	"New album created":                               "Utworzono nowy album",
 	"New album":                                       "Nowy album",

@@ -27,6 +27,7 @@ type session struct {
 
 type SessionData struct {
 	Uid                   int64
+	Login                 string
 	Admin                 bool
 	RequirePasswordChange bool
 }

@@ -279,7 +279,7 @@ func (db *DB) AddUser(tx Execer, login, name, surname, email string, adminLevel 
 }
 
 func (db *DB) AuthenticateUser(login string, password []byte) (SessionData, error) {
-	var d SessionData
+	d := SessionData{Login: login}
 	var h []byte
 	if err := db.db.QueryRow("SELECT uid, admin_level, require_password_change, passwordhash FROM users WHERE login=?", login).Scan(&d.Uid, &d.Admin, &d.RequirePasswordChange, &h); err != nil {
 		if err == sql.ErrNoRows {

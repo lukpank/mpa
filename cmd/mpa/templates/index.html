@@ -25,7 +25,8 @@
 	<main>
 	    <div class="index">
 		<ul>
-		    <li><a href="/albums">{{tr "All albums"}}</a></li>
+		    <li><a href="/albums/">{{tr "All albums"}}</a></li>
+		    <li><a href="/albums/{{.Login}}">{{tr "My albums"}}</a></li>
 		    <li><a href="/password">{{tr "title|Change password"}}</a></li>
 		    {{if .Admin}}
 		    <li><a href="/new/user">{{tr "New user"}}</a></li>
