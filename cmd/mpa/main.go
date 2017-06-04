@@ -134,21 +134,6 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	return s, nil
 }
 
-func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
-	session, err := s.SessionData(r)
-	if err != nil {
-		log.Println(err)
-		s.internalError(w, err, s.tr("Session error"))
-		return
-	}
-	data := struct {
-		Lang  string
-		Login string
-		Admin bool
-	}{s.lang, session.Login, session.Admin}
-	s.executeTemplate(w, "index.html", &data, http.StatusOK)
-}
-
 func (s *server) executeTemplate(w http.ResponseWriter, name string, data interface{}, code int) {
 	var b bytes.Buffer
 	if err := s.t.ExecuteTemplate(&b, name, &data); err != nil {

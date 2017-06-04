@@ -24,12 +24,24 @@
 	<p>&nbsp;</p>
 	<main>
 	    <div class="index">
+		<h3>{{tr "My"}}</h3>
 		<ul>
-		    <li><a href="/albums/">{{tr "All albums"}}</a></li>
-		    <li><a href="/albums/{{.Login}}">{{tr "My albums"}}</a></li>
+		    <li><a href="/albums/{{.Login}}">{{tr "My albums"}} ({{.AlbumsCnt}} {{tr "albums"}})</a></li>
 		    <li><a href="/password">{{tr "title|Change password"}}</a></li>
 		    {{if .Admin}}
 		    <li><a href="/new/user">{{tr "New user"}}</a></li>
+		    {{end}}
+		</ul>
+
+		<h3>{{tr "Other users"}}</h3>
+		<ul>
+		    <li><a href="/albums/">{{tr "All albums"}}</a></li>
+		    {{range .Others}}
+		    {{if (gt .AlbumsCnt 0)}}
+		    <li><a href="/albums/{{.Login}}">{{.Name}} {{.Surname}} ({{.AlbumsCnt}} {{tr "albums"}})</a></li>
+		    {{else}}
+		    <li>{{.Name}} {{.Surname}} (0 {{tr "albums"}})</li>
+		    {{end}}
 		    {{end}}
 		</ul>
 	    </div>
