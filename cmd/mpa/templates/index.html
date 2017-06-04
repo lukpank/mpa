@@ -24,9 +24,9 @@
 	<p>&nbsp;</p>
 	<main>
 	    <div class="index">
-		<h3>{{tr "My"}}</h3>
+		<h3>{{.Me.Name}} {{.Me.Surname}}</h3>
 		<ul>
-		    <li><a href="/albums/{{.Login}}">{{tr "My albums"}} ({{.AlbumsCnt}} {{tr "albums"}})</a></li>
+		    <li><a href="/albums/{{.Me.Login}}">{{tr "My albums"}} ({{.Me.AlbumsCnt}} {{tr "albums"}})</a></li>
 		    <li><a href="/password">{{tr "title|Change password"}}</a></li>
 		    {{if .Admin}}
 		    <li><a href="/new/user">{{tr "New user"}}</a></li>

@@ -12,19 +12,18 @@ func (s *server) ServeIndex(w http.ResponseWriter, r *http.Request) {
 		s.internalError(w, err, s.tr("Session error"))
 		return
 	}
-	others, albumsCnt, err := s.db.OtherUsersAlbumCnt(session.Uid)
+	me, others, err := s.db.MeAndOtherUsers(session.Uid)
 	if err != nil {
 		log.Println(err)
 		s.internalError(w, err, s.tr("Internal server error"))
 		return
 	}
 	data := struct {
-		Lang      string
-		Login     string
-		Admin     bool
-		AlbumsCnt int64
-		Others    []userAlbusCnt
-	}{s.lang, session.Login, session.Admin, albumsCnt, others}
+		Lang   string
+		Admin  bool
+		Me     userAlbusCnt
+		Others []userAlbusCnt
+	}{s.lang, session.Admin, me, others}
 	s.executeTemplate(w, "index.html", &data, http.StatusOK)
 }
 
@@ -35,7 +34,7 @@ type userAlbusCnt struct {
 	AlbumsCnt int64
 }
 
-func (db *DB) OtherUsersAlbumCnt(uid int64) (others []userAlbusCnt, albumsCnt int64, err error) {
+func (db *DB) MeAndOtherUsers(uid int64) (me userAlbusCnt, others []userAlbusCnt, err error) {
 	rows, err := db.db.Query(`
 SELECT users.uid, users.login, users.name, users.surname, count(albums.owner_id)
 FROM users LEFT OUTER JOIN albums
@@ -44,23 +43,23 @@ GROUP BY users.uid
 ORDER BY users.surname, users.name
 `)
 	if err != nil {
-		return nil, 0, err
+		return userAlbusCnt{}, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var u userAlbusCnt
 		var id int64
 		if err := rows.Scan(&id, &u.Login, &u.Name, &u.Surname, &u.AlbumsCnt); err != nil {
-			return nil, 0, err
+			return userAlbusCnt{}, nil, err
 		}
 		if id != uid {
 			others = append(others, u)
 		} else {
-			albumsCnt = u.AlbumsCnt
+			me = u
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, err
+		return userAlbusCnt{}, nil, err
 	}
 	return
 }
