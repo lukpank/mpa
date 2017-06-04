@@ -112,6 +112,12 @@ name TEXT)
 `)
 	}
 	if err == nil {
+		_, err = tx.Exec("CREATE INDEX albumsModified ON albums (modified)")
+	}
+	if err == nil {
+		_, err = tx.Exec("CREATE INDEX albumsOwnerIDModified ON albums (owner_id, modified)")
+	}
+	if err == nil {
 		_, err = tx.Exec(`
 CREATE TABLE images(
 iid INTEGER PRIMARY KEY,
@@ -122,6 +128,9 @@ is_portrait INTEGER,
 created INTEGER,
 owner_file_name TEXT)
 `)
+	}
+	if err == nil {
+		_, err = tx.Exec("CREATE INDEX imagesAlbumIDCreated ON images (album_id, created)")
 	}
 	if err == nil {
 		err = db.askAddUser(tx)
