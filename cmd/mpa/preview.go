@@ -6,6 +6,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"image"
 	"image/jpeg"
 	"io/ioutil"
@@ -86,10 +87,82 @@ type previewRequest struct {
 	result    chan<- error
 }
 
-func (s *server) previewWorker() {
-	for req := range s.preview {
+type previewJob struct {
+	id        int64
+	sha256sum string
+}
+
+type previewResult struct {
+	sha256sum string
+	err       error
+}
+
+var ErrQuit = errors.New("quit")
+
+func (s *server) previewMaster(workersCnt int) {
+	m := make(map[string][]previewRequest)
+	q := []previewJob{}
+	requests := make(chan previewJob)
+	results := make(chan previewResult)
+	working := 0
+	for i := 0; i < workersCnt; i++ {
+		go s.previewWorker(results, requests)
+	}
+	addReq := func(req previewRequest) {
+		s := m[req.sha256sum]
+		if len(s) == 0 {
+			q = append(q, previewJob{req.id, req.sha256sum})
+		}
+		m[req.sha256sum] = append(s, req)
+		if len(q) > 0 && working < workersCnt {
+			requests <- q[0]
+			q = q[1:]
+			working++
+		}
+	}
+	handleResult := func(result previewResult) {
+		working--
+		for _, req := range m[result.sha256sum] {
+			req.result <- result.err
+		}
+		delete(m, result.sha256sum)
+	}
+For:
+	for {
+		c := s.preview
+		if len(q) > 4096 {
+			c = nil
+		}
+		select {
+		case req, ok := <-c:
+			if !ok {
+				break For
+			}
+			addReq(req)
+		case r := <-results:
+			handleResult(r)
+			if len(q) > 0 && working < workersCnt {
+				requests <- q[0]
+				q = q[1:]
+				working++
+			}
+		}
+	}
+	close(requests)
+	for working > 0 {
+		handleResult(<-results)
+	}
+	for _, s := range m {
+		for _, req := range s {
+			req.result <- ErrQuit
+		}
+	}
+}
+
+func (s *server) previewWorker(results chan<- previewResult, requests <-chan previewJob) {
+	for req := range requests {
 		log.Printf("creating preview for image %d (%s)\n", req.id, req.sha256sum[:7])
-		req.result <- s.createPreviews(req.sha256sum)
+		results <- previewResult{req.sha256sum, s.createPreviews(req.sha256sum)}
 	}
 }
 

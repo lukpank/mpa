@@ -135,9 +135,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	}
 	c := make(chan previewRequest)
 	s := &server{db: db, t: t, s: NewSessions(), tr: tr.translate, lang: lang, secure: secure, preview: c}
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go s.previewWorker()
-	}
+	go s.previewMaster(runtime.NumCPU())
 	return s, nil
 }
 
