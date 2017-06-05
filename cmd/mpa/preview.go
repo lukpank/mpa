@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"image"
 	"image/jpeg"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -135,13 +136,26 @@ func (s *server) createPreview(filename string, img image.Image, maxSize uint) e
 		ph = 0
 	}
 	img = resize.Resize(pw, ph, img, resize.Lanczos3)
-	f, err := os.Create(filename)
+	f, err := ioutil.TempFile(s.db.uploadDir, "tmp")
 	if err != nil {
 		return err
 	}
+	tmpFileName := f.Name()
+	defer func() {
+		if tmpFileName != "" {
+			_ = os.Remove(tmpFileName)
+		}
+	}()
 	defer f.Close()
 	if err := jpeg.Encode(f, img, nil); err != nil {
 		return err
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpFileName, filename); err != nil {
+		return err
+	}
+	tmpFileName = ""
+	return nil
 }
