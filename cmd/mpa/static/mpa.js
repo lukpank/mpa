@@ -26,7 +26,12 @@ function setupViewMode(params) {
 		setupHTTPEventListeners(r, p.connectionError, function() { showImage(idx); }, null);
 		r.send();
 	}
-	function showImage(idx) {
+	var timeout = null;
+	function showImage(idx, slideShow) {
+		if (!slideShow) {
+			clearTimeout(timeout);
+			timeout = null;
+		}
 		if (idx < 0 || idx >= p.photos.length) {
 			return;
 		}
@@ -36,24 +41,34 @@ function setupViewMode(params) {
 			p.idx = idx;
 			view.src = src;
 			updateNav();
+			if (slideShow) {
+				timeout = setTimeout(showImage, 3000, idx + 1, true);
+			}
 		};
 		next.src = src;
 	}
 	document.onkeydown = function(e) {
 		if (e.keyCode == 32) {
-			showImage(p.idx + 1);
+			showImage(p.idx + 1, false);
 		} else if (e.keyCode == 8) {
-			showImage(p.idx - 1);
+			showImage(p.idx - 1, false);
 		}
+	};
+	p.slideShow = function () {
+		nav.className = "hidden";
+		hidden = true;
+		timeout = setTimeout(showImage, 3000, p.idx + 1, true);
 	};
  	var hidden = true;
 	view.addEventListener("click", function(event) {
 		var b = view.getBoundingClientRect();
 		if ((event.clientX - b.left) > 2*b.width/3) {
-			showImage(p.idx + 1);
+			showImage(p.idx + 1, false);
 		} else if ((event.clientX - b.left) < b.width/3) {
-			showImage(p.idx - 1);
+			showImage(p.idx - 1, false);
 		} else {
+			clearTimeout(timeout);
+			timeout = null;
 			if (requestFullScreen()) {
 			} else if (hidden) {
 				nav.className = "";
