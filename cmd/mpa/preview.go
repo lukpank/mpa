@@ -97,6 +97,16 @@ type previewResult struct {
 	err       error
 }
 
+func (s *server) preparePreviews(jobs []previewJob) {
+	result := make(chan error)
+	for _, job := range jobs {
+		s.preview <- previewRequest{job.id, job.sha256sum, result}
+		if err := <-result; err != nil {
+			log.Printf("preview %d (%s): %v", job.id, job.sha256sum[:7], err)
+		}
+	}
+}
+
 var ErrQuit = errors.New("quit")
 
 func (s *server) previewMaster(workersCnt int) {

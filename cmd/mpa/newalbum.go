@@ -133,7 +133,8 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		inf.description = descr
 	}
-	n, albumID, errs2 := s.db.AddAlbum(session.Uid, meta.Name, files, s.tr)
+	jobs, albumID, errs2 := s.db.AddAlbum(session.Uid, meta.Name, files, s.tr)
+	n := len(jobs)
 	errs = append(errs, errs2...)
 	if errs != nil {
 		log.Println("album: ", n)
@@ -145,6 +146,7 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		return
 	}
+	go s.preparePreviews(jobs)
 	msg := ""
 	if n == imgCnt {
 		msg = s.tr("All uploaded files added to the new album.")
@@ -188,7 +190,11 @@ func isPortrait(filename string) (bool, error) {
 	return cfg.Height > cfg.Width, nil
 }
 
-func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(string) string) (n int, albumID int64, errs []imageError) {
+// AddAlbum adds album to the database on success it returns non empty
+// previewJobs (for which caller may prepear previews). If errs are
+// returned it is still possible that previewJobs is non empty and so
+// album have been commited to the database.
+func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(string) string) (previewJobs []previewJob, albumID int64, errs []imageError) {
 	db.filesMu.Lock()
 	defer db.filesMu.Unlock()
 	var toRemove struct {
@@ -247,6 +253,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(stri
 	}
 	var imageID int64
 	isPortrait := false
+	jobs := make([]previewJob, 0, len(fs))
 	for _, inf := range fs {
 		r, err := tx.Exec("INSERT INTO images (sha256sum, album_id, title, is_portrait, created, owner_file_name) VALUES (?, ?, ?, ?, ?, ?)",
 			inf.sha256, albumID, inf.description, inf.isPortrait, inf.created, inf.userFileName)
@@ -254,13 +261,15 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(stri
 			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			return
 		}
+		id, err := r.LastInsertId()
+		if err != nil {
+			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
+			return
+		}
+		jobs = append(jobs, previewJob{id, inf.sha256})
 		if inf.isAlbumImage {
-			imageID, err = r.LastInsertId()
+			imageID = id
 			isPortrait = inf.isPortrait
-			if err != nil {
-				errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
-				return
-			}
 		}
 	}
 	_, err = tx.Exec("UPDATE albums SET image_id=?, is_portrait=? WHERE aid=?", imageID, isPortrait, albumID)
@@ -274,7 +283,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(stri
 	}
 	// transaction commited so we do not want to remove new files
 	toRemove.files = nil
-	n = len(fs)
+	previewJobs = jobs
 	return
 }
 
