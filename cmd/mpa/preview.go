@@ -94,21 +94,43 @@ func (s *server) previewWorker() {
 }
 
 func (s *server) createPreviews(sha256sum string) error {
+	dirName := filepath.Join(s.db.previewDir, sha256sum[:3])
+	filename := filepath.Join(dirName, sha256sum[3:])
+	filename1 := filename + ".1"
+	filename2 := filename + ".2"
+	exists := 0
+	if _, err := os.Stat(filename1); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else {
+		exists++
+	}
+	if _, err := os.Stat(filename2); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else {
+		exists++
+	}
+	if exists == 2 {
+		return nil
+	}
 	img, err := s.readImage(sha256sum)
 	if err != nil {
 		return err
 	}
-	dirName := filepath.Join(s.db.previewDir, sha256sum[:3])
+
 	if err := ensureDirExists(dirName, 0755); err != nil {
 		if !os.IsExist(err) {
 			return err
 		}
 	}
-	filename := filepath.Join(dirName, sha256sum[3:])
-	if err := s.createPreview(filename+".1", img, 1280); err != nil {
+
+	if err := s.createPreview(filename1, img, 1280); err != nil {
 		return err
 	}
-	return s.createPreview(filename+".2", img, 320)
+	return s.createPreview(filename2, img, 320)
 }
 
 func (s *server) readImage(sha256sum string) (image.Image, error) {
