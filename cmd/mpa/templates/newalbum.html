@@ -18,6 +18,8 @@
 	    <input id="bmenu" type="checkbox" class="show">
 	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
 	    <div class="menu">
+		<a class="pseudo button" href="#up">{{tr "Up"}}</a>
+		<a class="pseudo button" href="#down">{{tr "Down"}}</a>
 		<input type="text" id="albumName" placeholder='{{tr "Album name"}}' style="width: 20em">
 		<div class="hidden" id="progress"><div class="percent" id="percent" style="width: 0%">&nbsp;</div></div>
 		<button class="button" id="upload" onclick="obj.submit()">{{tr "Upload"}}</button>
@@ -26,6 +28,7 @@
 	<p>&nbsp;</p>
 
 	<main>
+	    <a id="up" class="anchor up"></a>
 	    <article id="result"></article>
 	    <div class="full flex two three-600 six-1200" id="images">
 		<div id="multi">
@@ -34,6 +37,7 @@
 		    </label>
 		</div>
 	    </div>
+	    <a id="down"></a>
 	</main>
 
 	<div class="modal">

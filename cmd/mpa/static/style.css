@@ -108,3 +108,13 @@ div.login-error {
 article h2, div.index h3 {
     padding-bottom: 0px;
 }
+
+#up.anchor {
+    display: block;
+    height: 4em;
+    margin: -4em 0 0 0;
+}
+
+html > body {
+    height: 95%;
+}
