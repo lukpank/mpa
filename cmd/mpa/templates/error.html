@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+    <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{.Title}}</title>
+	<link type="text/css" rel="stylesheet" href="/static/style.css">
+	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
+	<link rel="icon" href="/static/favicon.png" />
+    </head>
+    <body>
+	<nav>
+	    <div class="brand">
+		<a href="/" class="pseudo button">{{tr "Albums"}}</a>
+	    </div>
+	    {{/* responsive */}}
+	    <input id="bmenu" type="checkbox" class="show">
+	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
+	    <div class="menu">
+		<a class="pseudo button" href="/new/album">{{tr "New album"}}</a>
+		<a class="pseudo button" href="/logout/">{{tr "Logout"}}</a>
+	    </div>
+	</nav>
+	<p>&nbsp;</p>
+	<div class="index">
+	    <h2>{{.Title}}</h2>
+	    <p>{{.Text}}</p>
+	</div>
+    </body>
+</html>

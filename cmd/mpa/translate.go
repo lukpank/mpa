@@ -46,6 +46,7 @@ var plTranslation = translation{
 	"Albums":                                              "Albumy",
 	"All albums":                                          "Wszystkie albumy",
 	"All uploaded files added to the new album.":          "Wszystkie przesłane pliki dodano do nowego albumu.",
+	"Authorization error":                                 "Błąd upoważnienia",
 	"Bad request: error parsing form":                     "Błędne zapytanie: błąd parsowania formularza",
 	"Click to add description or delete the image":        "Kliknij aby dodać opis lub usunąć obraz",
 	"Close":                                                "Zamknij",

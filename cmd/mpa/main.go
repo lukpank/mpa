@@ -118,6 +118,7 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
 	t, err := newTemplate("html", m,
 		"templates/album.html",
+		"templates/error.html",
 		"templates/index.html",
 		"templates/login.html",
 		"templates/loginapi.html",
@@ -141,11 +142,30 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 
 func (s *server) executeTemplate(w http.ResponseWriter, name string, data interface{}, code int) {
 	var b bytes.Buffer
-	if err := s.t.ExecuteTemplate(&b, name, &data); err != nil {
-		s.internalError(w, err, s.tr("Error during template execution"))
+	if err := s.t.ExecuteTemplate(&b, name, data); err != nil {
+		log.Println(err)
+		s.templateExecutionError(w)
 		return
 	}
 	w.WriteHeader(code)
+	if _, err := b.WriteTo(w); err != nil {
+		log.Println(err)
+	}
+}
+
+// templateExecutionError is used internally by executeTemplate to avoid infinite recursion
+func (s *server) templateExecutionError(w http.ResponseWriter) {
+	data := struct {
+		Lang, Title, Text string
+	}{s.lang, s.tr("Internal server error"), s.tr("Error during template execution")}
+	var b bytes.Buffer
+	if err := s.t.ExecuteTemplate(&b, "error.html", &data); err != nil {
+		log.Println(err)
+		w.Header().Set("Content-Type", "text/plain")
+		http.Error(w, data.Title+": "+data.Text, http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
 	if _, err := b.WriteTo(w); err != nil {
 		log.Println(err)
 	}
@@ -156,8 +176,9 @@ func ServeFavicon(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) error(w http.ResponseWriter, title, text string, code int) {
-	w.Header().Set("Content-Type", "text/plain")
-	http.Error(w, title+": "+text, code)
+	s.executeTemplate(w, "error.html", &struct {
+		Lang, Title, Text string
+	}{s.lang, title, text}, code)
 }
 
 func (s *server) parseFormError(w http.ResponseWriter, err error) {

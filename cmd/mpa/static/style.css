@@ -105,7 +105,7 @@ div.login-error {
     margin: auto;
 }
 
-article h2, div.index h3 {
+article h2, div.index h2, div.index h3 {
     padding-bottom: 0px;
 }
 
