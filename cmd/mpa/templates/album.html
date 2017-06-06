@@ -18,6 +18,9 @@
 	    <label for="bmenu" class="burger pseudo button">&#8801;</label>
 	    <div class="menu">
 		<a class="pseudo button" href="/new/album">{{tr "New album"}}</a>
+		{{if .MyAlbum}}
+		<a class="pseudo button" href="/edit/{{.URL}}">{{tr "Edit album"}}</a>
+		{{end}}
 		<a class="pseudo button" href="/logout{{.URL}}">{{tr "Logout"}}</a>
 	    </div>
 	</nav>

@@ -118,36 +118,48 @@ function setupHTTPEventListeners(r, connectionError, callback, onResponse) {
 	};
 }
 
-function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
+function setupEditAlbum(submitURL, origName, imgs, clickMsg, noSubmitMsg, connectionError) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
 	var title = document.getElementById('title');
 	var upload = document.getElementById("upload");
 	var prog = new progress();
-	this.images = [];
+	for (var i = 0; i < imgs.length; i++) {
+		imgs[i].origTitle = imgs[i].title;
+	}
+	this.isEdit = imgs.length > 0;
+	this.origName = origName;
+	this.images = imgs;
+	this.deleted = [];
 	this.modalIdx = 0;
 	this.addTitle = function() {
 		var o = this.images[this.modalIdx];
+		var span = document.getElementById("title_"+this.modalIdx);
 		var old = o.title;
 		o.title = title.value;
 		if (title.value == "") {
 			if (old != "") {
-				o.span.className = "hidden";
+				span.className = "hidden";
 			}
 			return;
 		}
-		o.span.firstChild.nodeValue = title.value;
+		span.firstChild.nodeValue = title.value;
 		if (old == "") {
-			o.span.className = "label success full";
+			span.className = "label success full";
 		}
 	};
 	this.deleteImage = function() {
-		var o = this.images[this.modalIdx];
-		images.removeChild(o.div);
-		this.images[this.modalIdx] = null;
+		var idx = this.modalIdx;
+		var o = this.images[idx];
+		var div = document.getElementById("img_"+idx);
+		images.removeChild(div);
+		if (o.id != null) {
+			this.deleted.push(o.id);
+		}
+		this.images[idx] = null;
 	};
-	this.showModal = function(idx) {
+	this.edit = function(idx) {
 		this.modalIdx = idx;
 		title.value = this.images[idx].title;
 		modal1.checked = true; 
@@ -155,17 +167,24 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	};
 	var obj = this;
 	this.submit = function() {
-		var meta = {name: document.getElementById("albumName").value, titles: {}};
+		var meta = {name: document.getElementById("albumName").value, titles: {}, edit: {deleted: this.deleted, titles: {}}};
 		var d = new FormData();
-		var ok = false;
+		var ok = this.deleted.length > 0 || (this.isEdit && meta.name != this.origName);
 		for (var i = 0; i < this.images.length; i++) {
 			var o = this.images[i];
 			if (o == null) {
 				continue;
 			}
-			d.append("image:" + i, o.file);
-			meta.titles[i] = o.title;
-			ok = true;
+			if (o.id != null) {
+				if (o.title != o.origTitle) {
+					meta.edit.titles[o.id] = o.title;
+					ok = true;
+				}
+			} else {
+				d.append("image:" + i, o.file);
+				meta.titles[i] = o.title;
+				ok = true;
+			}
 		}
 		d.append("metadata", JSON.stringify(meta));
 		if (meta.name == "" || !ok) {
@@ -175,7 +194,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		upload.disabled = true;
 		prog.show();
 		var r = new XMLHttpRequest();
-		r.open("POST", "/api/new/album");
+		r.open("POST", submitURL);
 		setupHTTPEventListeners(
 			r, connectionError, function() { obj.submit(); },
 			function(status) {
@@ -200,14 +219,16 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		input.setAttribute("title", clickMsg);
 		input.setAttribute("type", "file");
 		var idx = this.images.length;
-		input.onclick = function () { return obj.showModal(idx); };
+		input.onclick = function () { return obj.edit(idx); };
 		var label = document.createElement("label");
 		label.appendChild(input);
 		label.className = "dropimage";
 		var span = document.createElement("span");
+		span.id = "title_" + idx;
 		span.className = "hidden";
 		span.appendChild(document.createTextNode(title.value));
 		var div = document.createElement("div");
+		div.id = "img_" + idx;
 		div.appendChild(label);
 		div.appendChild(span);
 		if (URL.createObjectURL) {
@@ -220,7 +241,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 			reader.readAsDataURL(file);
 		}
 		images.insertBefore(div, multi);
-		this.images.push({div: div, file: file, span: span, title: ""});
+		this.images.push({id: null, file: file, title: ""});
 	};
 	document.querySelector('.dropimage').onchange = function(e){
 		for (var i = 0; i < e.target.files.length; i++) {

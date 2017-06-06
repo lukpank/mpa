@@ -3,7 +3,7 @@
     <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{tr "New album"}}</title>
+	<title>{{tr "Editing album"}}: {{.Title}}</title>
 	<link type="text/css" rel="stylesheet" href="/static/style.css">
 	<link type="text/css" rel="stylesheet" href="/static/picnic.min.css">
 	<script src="/static/mpa.js"></script>
@@ -20,17 +20,30 @@
 	    <div class="menu">
 		<a class="pseudo button" href="#up">{{tr "Up"}}</a>
 		<a class="pseudo button" href="#down">{{tr "Down"}}</a>
-		<input type="text" id="albumName" placeholder='{{tr "Album name"}}' style="width: 20em">
+		<input type="text" id="albumName" placeholder='{{tr "Album name"}}' style="width: 20em" value="{{.Title}}">
 		<div class="hidden" id="progress"><div class="percent" id="percent" style="width: 0%">&nbsp;</div></div>
 		<button class="button" id="upload" onclick="obj.submit()">{{tr "Upload"}}</button>
 	    </div>
 	</nav>
 	<p>&nbsp;</p>
-
 	<main>
 	    <a id="up" class="anchor up"></a>
 	    <article id="result"></article>
 	    <div class="full flex two three-600 six-1200" id="images">
+		{{range $idx, $ := .Images}}
+		<div id="img_{{$idx}}">
+		    <div class="image">
+			<article class="card">
+			    <img class="{{.Class}}" src="{{.Src}}" onclick="obj.edit({{$idx}})">
+			</article>
+		    </div>
+		    {{if .Title}}
+		    <span id="title_{{$idx}}" class="label success full">{{.Title}}</span>
+		    {{else}}
+		    <span id="title_{{$idx}}" class="hidden">{{.}}</span>
+		    {{end}}
+		</div>
+		{{end}}
 		<div id="multi">
 		    <label class="dropimage">
 			<input title='{{tr "Drop images or click here"}}' type="file" multiple>
@@ -76,9 +89,10 @@
 	<div id="login" class="modal"></div>
 
 	<script>
-	 var obj = new setupEditAlbum("/api/new/album", "", [],
+	 var obj = new setupEditAlbum({{.SubmitURL}}, {{.Title}},
+				      {{.Images}},
 				      {{tr "Click to add title or delete the image"}},
-				      {{tr "Please specify album name and add at least one image"}},
+				      {{tr "No changes or empty album name"}},
 				      {{tr "Connection error"}});
 	</script>
     </body>

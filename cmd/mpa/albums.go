@@ -44,10 +44,11 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 	data := struct {
-		Title  string
-		URL    string
-		Lang   string
-		Images []img
+		Title   string
+		MyAlbum bool
+		URL     string
+		Lang    string
+		Images  []img
 	}{
 		Title: title,
 		URL:   pathQuery(r),

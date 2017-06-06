@@ -27,16 +27,10 @@ func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 	s.executeTemplate(w, "newalbum.html", &struct{ Lang string }{s.lang}, http.StatusOK)
 }
 
-func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
+func (s *server) ServeAPINewAlbum(w http.ResponseWriter, r *http.Request) {
 	session, err := s.SessionData(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		log.Println(err)
-		return
-	}
-	mr, err := r.MultipartReader()
-	if err != nil {
-		http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
@@ -47,74 +41,17 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer os.RemoveAll(tempDir)
-	var meta struct {
-		Name   string
-		Titles map[string]string
+	d, ok := s.upload(w, r, tempDir)
+	if !ok {
+		return
 	}
-	var files []*uploadInfo
-	var imgCnt int
-	var errs []imageError
-	m := make(map[string]*uploadInfo)
-	for {
-		p, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		formName := p.FormName()
-		if formName == "metadata" {
-			if err := json.NewDecoder(p).Decode(&meta); err != nil {
-				http.Error(w, s.tr("Error parsing metadata"), http.StatusBadRequest)
-				log.Println(err)
-				return
-			}
-			fmt.Println(meta)
-			continue
-		}
-		idx := strings.TrimPrefix(formName, "image:")
-		if len(idx) == len(formName) {
-			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
-			log.Println("unexpected form name " + formName)
-			return
-		}
-
-		imgCnt++
-		filename := filepath.Join(tempDir, strconv.Itoa(len(files)))
-		n, sha256, err := writeFileSha256(filename, p)
-		if err != nil {
-			errs = append(errs, imageError{err, p.FileName(), s.tr("Internal server error")})
-			m[idx] = &uploadInfo{}
-			continue
-		}
-		isPort, err := isPortrait(filename)
-		if err != nil {
-			errs = append(errs, imageError{err, p.FileName(), s.tr("Could not determine image size")})
-			m[idx] = &uploadInfo{}
-			continue
-		}
-		var created time.Time
-		t, err := exifDateTimeFromFile(filename)
-		if err != nil {
-			created = time.Now().UTC()
-			errs = append(errs, imageError{err, p.FileName(), s.tr("Could not determine image time, current time assumed")})
-		} else {
-			created = t
-		}
-		inf := &uploadInfo{tmpFileName: filename, formName: formName, userFileName: p.FileName(), sha256: sha256, isPortrait: isPort, created: created}
-		files = append(files, inf)
-		m[idx] = inf
-		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
-	}
-	if meta.Name == "" {
+	if d.meta.Name == "" {
 		http.Error(w, s.tr("Album name not specified"), http.StatusBadRequest)
 		log.Println("Bad request: Album name not specified")
 		return
 	}
-	if len(files) == 0 {
-		if len(errs) > 0 {
+	if len(d.files) == 0 {
+		if len(d.errs) > 0 {
 			http.Error(w, s.tr("No uploaded image was successfully processed"), http.StatusBadRequest)
 			log.Println("Bad request: no uploaded image was successfully processed")
 		} else {
@@ -123,22 +60,22 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	files[0].isAlbumImage = true
-	for idx, descr := range meta.Titles {
-		inf := m[idx]
-		if m[idx] == nil {
+	d.files[0].isAlbumImage = true
+	for idx, descr := range d.meta.Titles {
+		inf := d.m[idx]
+		if d.m[idx] == nil {
 			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
 		inf.title = descr
 	}
-	jobs, albumID, errs2 := s.db.AddAlbum(session.Uid, meta.Name, files, s.tr)
+	jobs, albumID, errs2 := s.db.AddAlbum(session.Uid, d.meta.Name, d.files, s.tr)
 	n := len(jobs)
-	errs = append(errs, errs2...)
-	if errs != nil {
+	d.errs = append(d.errs, errs2...)
+	if d.errs != nil {
 		log.Println("album: ", n)
-		for _, e := range errs {
+		for _, e := range d.errs {
 			fmt.Printf("%s: %s: %s\n", e.FileName, e.Msg, e.err)
 		}
 	}
@@ -148,16 +85,31 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 	go s.preparePreviews(jobs)
 	msg := ""
-	if n == imgCnt {
+	if n == d.imgCnt {
 		msg = s.tr("All uploaded files added to the new album.")
 	} else {
-		msg = fmt.Sprintf(s.tr("%d out of %d uploaded files added to the new album."), n, imgCnt)
+		msg = fmt.Sprintf(s.tr("%d out of %d uploaded files added to the new album."), n, d.imgCnt)
 	}
 	s.executeTemplate(w, "newalbumok.html", struct {
 		Message  string
 		Problems []imageError
 		Href     string
-	}{msg, errs, fmt.Sprintf("/album/%d", albumID)}, http.StatusOK)
+	}{msg, d.errs, fmt.Sprintf("/album/%d", albumID)}, http.StatusOK)
+}
+
+type uploadData struct {
+	meta struct {
+		Name   string
+		Titles map[string]string
+		Edit   struct {
+			Deleted []int64
+			Titles  map[string]string
+		}
+	}
+	imgCnt int
+	files  []*uploadInfo
+	m      map[string]*uploadInfo
+	errs   []imageError
 }
 
 type uploadInfo struct {
@@ -175,6 +127,71 @@ type imageError struct {
 	err      error
 	FileName string
 	Msg      string
+}
+
+func (s *server) upload(w http.ResponseWriter, r *http.Request, tempDir string) (*uploadData, bool) {
+	d := uploadData{m: make(map[string]*uploadInfo)}
+	mr, err := r.MultipartReader()
+	if err != nil {
+		log.Println(err)
+		http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
+		return nil, false
+	}
+	for {
+		p, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println(err)
+			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
+			return nil, false
+		}
+		formName := p.FormName()
+		if formName == "metadata" {
+			if err := json.NewDecoder(p).Decode(&d.meta); err != nil {
+				log.Println(err)
+				http.Error(w, s.tr("Error parsing metadata"), http.StatusBadRequest)
+				return nil, false
+			}
+			fmt.Println(&d.meta)
+			continue
+		}
+		idx := strings.TrimPrefix(formName, "image:")
+		if len(idx) == len(formName) {
+			log.Println("unexpected form name " + formName)
+			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
+			return nil, false
+		}
+
+		d.imgCnt++
+		filename := filepath.Join(tempDir, strconv.Itoa(len(d.files)))
+		n, sha256, err := writeFileSha256(filename, p)
+		if err != nil {
+			d.errs = append(d.errs, imageError{err, p.FileName(), s.tr("Internal server error")})
+			d.m[idx] = &uploadInfo{}
+			continue
+		}
+		isPort, err := isPortrait(filename)
+		if err != nil {
+			d.errs = append(d.errs, imageError{err, p.FileName(), s.tr("Could not determine image size")})
+			d.m[idx] = &uploadInfo{}
+			continue
+		}
+		var created time.Time
+		t, err := exifDateTimeFromFile(filename)
+		if err != nil {
+			created = time.Now().UTC()
+			d.errs = append(d.errs, imageError{err, p.FileName(), s.tr("Could not determine image time, current time assumed")})
+		} else {
+			created = t
+		}
+		inf := &uploadInfo{tmpFileName: filename, formName: formName, userFileName: p.FileName(), sha256: sha256, isPortrait: isPort, created: created}
+		d.files = append(d.files, inf)
+		d.m[idx] = inf
+		fmt.Println(p.Header, n, p.FormName(), p.FileName(), sha256)
+	}
+	return &d, true
 }
 
 func isPortrait(filename string) (bool, error) {

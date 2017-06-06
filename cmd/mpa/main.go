@@ -57,7 +57,9 @@ func main() {
 	}
 	http.HandleFunc("/", s.authenticate(s.ServeIndex))
 	http.HandleFunc("/new/album", s.authenticate(s.ServeNewAlbum))
-	http.HandleFunc("/api/new/album", s.authenticate(s.ServeApiNewAlbum))
+	http.HandleFunc("/api/new/album", s.authenticate(s.ServeAPINewAlbum))
+	http.HandleFunc("/edit/album/", s.authenticate(s.ServeEditAlbum))
+	http.HandleFunc("/api/edit/album/", s.authenticate(s.ServeAPIEditAlbum))
 	http.HandleFunc("/albums/", s.authenticate(s.ServeAlbums))
 	http.HandleFunc("/album/", s.authenticate(s.ServeAlbum))
 	http.HandleFunc("/preview/", s.authenticate(s.ServePreview))
@@ -118,6 +120,8 @@ func newServer(db *DB, secure bool, filesDir string) (*server, error) {
 	m := template.FuncMap{"tr": tr.translate, "htmlTr": tr.htmlTranslate}
 	t, err := newTemplate("html", m,
 		"templates/album.html",
+		"templates/editalbum.html",
+		"templates/editalbumok.html",
 		"templates/error.html",
 		"templates/index.html",
 		"templates/login.html",

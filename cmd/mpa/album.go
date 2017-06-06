@@ -17,8 +17,15 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, s.tr("Page not found"), http.StatusNotFound)
 		return
 	}
+	session, err := s.SessionData(r)
+	if err != nil {
+		log.Println(err)
+		s.internalError(w, err, s.tr("Session error"))
+		return
+	}
 	var name string
-	err = s.db.db.QueryRow("SELECT name FROM albums WHERE aid=?", albumID).Scan(&name)
+	var ownerID int64
+	err = s.db.db.QueryRow("SELECT name, owner_id FROM albums WHERE aid=?", albumID).Scan(&name, &ownerID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, s.tr("Page not found"), http.StatusNotFound)
@@ -43,14 +50,16 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		Title string
 	}
 	data := struct {
-		Title  string
-		URL    string
-		Lang   string
-		Images []img
+		Title   string
+		MyAlbum bool
+		URL     string
+		Lang    string
+		Images  []img
 	}{
-		Title: name,
-		URL:   pathQuery(r),
-		Lang:  s.lang,
+		Title:   name,
+		MyAlbum: ownerID == session.Uid,
+		URL:     pathQuery(r),
+		Lang:    s.lang,
 	}
 	for rows.Next() {
 		var id int64
