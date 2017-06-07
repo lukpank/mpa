@@ -55,8 +55,8 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id int64
 		var portrait bool
-		var description string
-		if err := rows.Scan(&id, &portrait, &description); err != nil {
+		var title string
+		if err := rows.Scan(&id, &portrait, &title); err != nil {
 			log.Println(err)
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			return
@@ -65,7 +65,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		if portrait {
 			class = "preview portrait"
 		}
-		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id), Title: description})
+		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id), Title: title})
 	}
 	if err := rows.Err(); err != nil {
 		log.Println(err)

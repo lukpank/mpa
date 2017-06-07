@@ -45,14 +45,14 @@
 	    <label for="modal_1" class="overlay"></label>
 	    <article>
 		<header>
-		    <h4>{{tr "Add description or delete"}}</h4>
+		    <h4>{{tr "Add title or delete"}}</h4>
 		    <label for="modal_1" class="close">&times;</label>
 		</header>
 		<section class="content">
-		    <input type="text" id="description" placeholder='{{tr "Description"}}'>
+		    <input type="text" id="title" placeholder='{{tr "Title"}}'>
 		</section>
 		<footer>
-		    <label for="modal_1" class="button" onclick="obj.addDescription();">{{tr "Update"}}</label>
+		    <label for="modal_1" class="button" onclick="obj.addTitle();">{{tr "Update"}}</label>
 		    <label for="modal_1" class="button dangerous" onclick="obj.deleteImage();">{{tr "Delete"}}</label>
 		</footer>
 	    </article>
@@ -76,7 +76,7 @@
 	<div id="login" class="modal"></div>
 
 	<script>
-	 var obj = new setupDropImage({{tr "Click to add description or delete the image"}},
+	 var obj = new setupDropImage({{tr "Click to add title or delete the image"}},
 				      {{tr "Please specify album name and add at least one image"}},
 				      {{tr "Connection error"}});
 	</script>

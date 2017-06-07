@@ -48,8 +48,8 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 	}
 	defer os.RemoveAll(tempDir)
 	var meta struct {
-		Name         string
-		Descriptions map[string]string
+		Name   string
+		Titles map[string]string
 	}
 	var files []*uploadInfo
 	var imgCnt int
@@ -124,14 +124,14 @@ func (s *server) ServeApiNewAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	files[0].isAlbumImage = true
-	for idx, descr := range meta.Descriptions {
+	for idx, descr := range meta.Titles {
 		inf := m[idx]
 		if m[idx] == nil {
 			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
-		inf.description = descr
+		inf.title = descr
 	}
 	jobs, albumID, errs2 := s.db.AddAlbum(session.Uid, meta.Name, files, s.tr)
 	n := len(jobs)
@@ -164,7 +164,7 @@ type uploadInfo struct {
 	tmpFileName  string
 	formName     string
 	userFileName string
-	description  string
+	title        string
 	sha256       string
 	isPortrait   bool
 	isAlbumImage bool
@@ -256,7 +256,7 @@ func (db *DB) AddAlbum(uid int64, name string, files []*uploadInfo, tr func(stri
 	jobs := make([]previewJob, 0, len(fs))
 	for _, inf := range fs {
 		r, err := tx.Exec("INSERT INTO images (sha256sum, album_id, title, is_portrait, created, owner_file_name) VALUES (?, ?, ?, ?, ?, ?)",
-			inf.sha256, albumID, inf.description, inf.isPortrait, inf.created, inf.userFileName)
+			inf.sha256, albumID, inf.title, inf.isPortrait, inf.created, inf.userFileName)
 		if err != nil {
 			errs = append(errs, imageError{err, inf.userFileName, tr("Internal server error")})
 			return

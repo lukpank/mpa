@@ -122,22 +122,22 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	var images = document.getElementById("images");
 	var multi = document.getElementById("multi");
 	var modal1 = document.getElementById('modal_1');
-	var description = document.getElementById('description');
+	var title = document.getElementById('title');
 	var upload = document.getElementById("upload");
 	var prog = new progress();
 	this.images = [];
 	this.modalIdx = 0;
-	this.addDescription = function() {
+	this.addTitle = function() {
 		var o = this.images[this.modalIdx];
-		var old = o.description;
-		o.description = description.value;
-		if (description.value == "") {
+		var old = o.title;
+		o.title = title.value;
+		if (title.value == "") {
 			if (old != "") {
 				o.span.className = "hidden";
 			}
 			return;
 		}
-		o.span.firstChild.nodeValue = description.value;
+		o.span.firstChild.nodeValue = title.value;
 		if (old == "") {
 			o.span.className = "label success full";
 		}
@@ -149,13 +149,13 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 	};
 	this.showModal = function(idx) {
 		this.modalIdx = idx;
-		description.value = this.images[idx].description;
+		title.value = this.images[idx].title;
 		modal1.checked = true; 
 		return false;
 	};
 	var obj = this;
 	this.submit = function() {
-		var meta = {name: document.getElementById("albumName").value, descriptions: {}};
+		var meta = {name: document.getElementById("albumName").value, titles: {}};
 		var d = new FormData();
 		var ok = false;
 		for (var i = 0; i < this.images.length; i++) {
@@ -164,7 +164,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 				continue;
 			}
 			d.append("image:" + i, o.file);
-			meta.descriptions[i] = o.description;
+			meta.titles[i] = o.title;
 			ok = true;
 		}
 		d.append("metadata", JSON.stringify(meta));
@@ -206,7 +206,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 		label.className = "dropimage";
 		var span = document.createElement("span");
 		span.className = "hidden";
-		span.appendChild(document.createTextNode(description.value));
+		span.appendChild(document.createTextNode(title.value));
 		var div = document.createElement("div");
 		div.appendChild(label);
 		div.appendChild(span);
@@ -220,7 +220,7 @@ function setupDropImage(clickMsg, noSubmitMsg, connectionError) {
 			reader.readAsDataURL(file);
 		}
 		images.insertBefore(div, multi);
-		this.images.push({div: div, file: file, span: span, description: ""});
+		this.images.push({div: div, file: file, span: span, title: ""});
 	};
 	document.querySelector('.dropimage').onchange = function(e){
 		for (var i = 0; i < e.target.files.length; i++) {
