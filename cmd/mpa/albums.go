@@ -47,7 +47,7 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 		Title  string
 		URL    string
 		Lang   string
-		Photos []img
+		Images []img
 	}{
 		Title: title,
 		URL:   pathQuery(r),
@@ -67,14 +67,14 @@ func (s *server) ServeAlbums(w http.ResponseWriter, r *http.Request) {
 		if portrait {
 			class = "preview portrait"
 		}
-		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", imageID), Class: class, Href: fmt.Sprintf("/album/%d", albumID), Title: name})
+		data.Images = append(data.Images, img{Src: fmt.Sprintf("/preview/%d", imageID), Class: class, Href: fmt.Sprintf("/album/%d", albumID), Title: name})
 	}
 	if err := rows.Err(); err != nil {
 		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
-	if login != "" && len(data.Photos) == 0 {
+	if login != "" && len(data.Images) == 0 {
 		var uid int64
 		err = s.db.db.QueryRow("SELECT uid FROM users WHERE login=?", login).Scan(&uid)
 		if err != nil {

@@ -43,7 +43,7 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Title  string
 		Lang   string
-		Photos []int64
+		Images []int64
 	}{
 		Title: name,
 		Lang:  s.lang,
@@ -55,7 +55,7 @@ func (s *server) ServeView(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 			return
 		}
-		data.Photos = append(data.Photos, id)
+		data.Images = append(data.Images, id)
 	}
 	if err := rows.Err(); err != nil {
 		log.Println(err)

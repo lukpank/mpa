@@ -46,7 +46,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		Title  string
 		URL    string
 		Lang   string
-		Photos []img
+		Images []img
 	}{
 		Title: name,
 		URL:   pathQuery(r),
@@ -65,7 +65,7 @@ func (s *server) ServeAlbum(w http.ResponseWriter, r *http.Request) {
 		if portrait {
 			class = "preview portrait"
 		}
-		data.Photos = append(data.Photos, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id), Title: title})
+		data.Images = append(data.Images, img{Src: fmt.Sprintf("/preview/%d", id), Class: class, Href: fmt.Sprintf("/view/%d#%d", albumID, id), Title: title})
 	}
 	if err := rows.Err(); err != nil {
 		log.Println(err)

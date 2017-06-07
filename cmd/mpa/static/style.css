@@ -6,11 +6,11 @@ nav {
     position: absolute;
 }
 
-.photo {
+.image {
     margin: auto;
 }
 
-.photo > .card {
+.image > .card {
     background-color: #eee;
 }
 

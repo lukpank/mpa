@@ -8,21 +8,21 @@ function setupViewMode(params) {
 	var nav = document.getElementById("nav");
 	var text = document.getElementById("text");
 	var n = parseInt(window.location.hash.substr(1));
-	for (var i = 0; i < p.photos.length; i++) {
-		if (p.photos[i] == n) {
+	for (var i = 0; i < p.images.length; i++) {
+		if (p.images[i] == n) {
 			p.idx = i;
 			break;
 		}
 	}
-	view.src = "/image/" + p.photos[p.idx];
+	view.src = "/image/" + p.images[p.idx];
 	function updateNav() {
-		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.photos.length;
+		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.images.length;
 	}
 	updateNav();
 	var next = new Image();
 	function handleError(idx) {
 		var r = new XMLHttpRequest();
-		r.open("GET", "/api/image/" + p.photos[idx]);
+		r.open("GET", "/api/image/" + p.images[idx]);
 		setupHTTPEventListeners(r, p.connectionError, function() { showImage(idx); }, null);
 		r.send();
 	}
@@ -32,10 +32,10 @@ function setupViewMode(params) {
 			clearTimeout(timeout);
 			timeout = null;
 		}
-		if (idx < 0 || idx >= p.photos.length) {
+		if (idx < 0 || idx >= p.images.length) {
 			return;
 		}
-		var src = "/image/" + p.photos[idx];
+		var src = "/image/" + p.images[idx];
 		next.onerror = function() { handleError(idx); };
 		next.onload = function() {
 			p.idx = idx;
