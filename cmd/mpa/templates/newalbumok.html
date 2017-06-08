@@ -13,7 +13,9 @@
     </thead>
     <tbody>
 	{{range .}}
+	{{if .Msg}}
 	<tr><td>{{.FileName}}</td><td>{{.Msg}}</td></tr>
+	{{end}}
 	{{end}}
     </tbody>
 </table>

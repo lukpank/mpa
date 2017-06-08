@@ -30,14 +30,16 @@ func (s *server) ServeNewAlbum(w http.ResponseWriter, r *http.Request) {
 func (s *server) ServeAPINewAlbum(w http.ResponseWriter, r *http.Request) {
 	session, err := s.SessionData(r)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		log.Println(err)
+		// Forbidden used as API calls expect modal login served on Unauthorized.
+		// Actually it is probably internal server error.
+		http.Error(w, s.tr("Unauthorized error"), http.StatusUnauthorized)
 		return
 	}
 	tempDir, err := ioutil.TempDir(s.db.uploadDir, "tmp")
 	if err != nil {
-		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		log.Println(err)
+		http.Error(w, s.tr("Internal server error"), http.StatusInternalServerError)
 		return
 	}
 	defer os.RemoveAll(tempDir)
@@ -46,35 +48,35 @@ func (s *server) ServeAPINewAlbum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if d.meta.Name == "" {
-		http.Error(w, s.tr("Album name not specified"), http.StatusBadRequest)
 		log.Println("Bad request: Album name not specified")
+		http.Error(w, s.tr("Album name not specified"), http.StatusBadRequest)
 		return
 	}
 	if len(d.files) == 0 {
 		if len(d.errs) > 0 {
+			log.Println("Bad request: no uploaded image was successfully rpocessed")
 			http.Error(w, s.tr("No uploaded image was successfully processed"), http.StatusBadRequest)
-			log.Println("Bad request: no uploaded image was successfully processed")
 		} else {
-			http.Error(w, s.tr("No images uploaded"), http.StatusBadRequest)
 			log.Println("Bad request: no images uploaded")
+			http.Error(w, s.tr("No images uploaded"), http.StatusBadRequest)
 		}
 		return
 	}
 	d.files[0].isAlbumImage = true
-	for idx, descr := range d.meta.Titles {
+	for idx, title := range d.meta.Titles {
 		inf := d.m[idx]
 		if d.m[idx] == nil {
+			log.Println("Error parsing form: unexpected index")
 			http.Error(w, s.tr("Error parsing form"), http.StatusBadRequest)
-			log.Println(err)
 			return
 		}
-		inf.title = descr
+		inf.title = title
 	}
 	jobs, albumID, errs2 := s.db.AddAlbum(session.Uid, d.meta.Name, d.files, s.tr)
 	n := len(jobs)
 	d.errs = append(d.errs, errs2...)
 	if d.errs != nil {
-		log.Println("album: ", n)
+		log.Println("album:", albumID, "new:", n)
 		for _, e := range d.errs {
 			fmt.Printf("%s: %s: %s\n", e.FileName, e.Msg, e.err)
 		}
@@ -90,7 +92,7 @@ func (s *server) ServeAPINewAlbum(w http.ResponseWriter, r *http.Request) {
 	} else {
 		msg = fmt.Sprintf(s.tr("%d out of %d uploaded files added to the new album."), n, d.imgCnt)
 	}
-	s.executeTemplate(w, "newalbumok.html", struct {
+	s.executeTemplate(w, "newalbumok.html", &struct {
 		Message  string
 		Problems []imageError
 		Href     string
