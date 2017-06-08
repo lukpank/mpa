@@ -84,8 +84,16 @@ function setupViewMode(params) {
 function progress() {
 	var prog = document.getElementById('progress');
 	var percent = document.getElementById('percent');
-	this.show = function() { prog.className = "progress"; };
-	this.hide = function() { prog.className = "hidden"; percent.style.width = "0%"; };
+	var albumName = document.getElementById('albumName');
+	this.show = function() {
+		prog.className = "progress";
+		albumName.className = "hidden"; 
+	};
+	this.hide = function() {
+		prog.className = "hidden";
+		percent.style.width = "0%";
+		albumName.className = "";
+	};
 	this.update = function(part, total) {
 		percent.style.width = (100 * part / total) + "%";
 	};
