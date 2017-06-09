@@ -4,9 +4,9 @@
 
 function setupViewMode(params) {
 	var p = params;
-	var view = document.getElementById("view");
 	var nav = document.getElementById("nav");
 	var text = document.getElementById("text");
+	var body = document.body;
 	var n = parseInt(window.location.hash.substr(1));
 	for (var i = 0; i < p.images.length; i++) {
 		if (p.images[i] == n) {
@@ -14,11 +14,9 @@ function setupViewMode(params) {
 			break;
 		}
 	}
-	view.src = "/image/" + p.images[p.idx];
 	function updateNav() {
 		text.firstChild.nodeValue = "" + (p.idx + 1) + " / " + p.images.length;
 	}
-	updateNav();
 	var next = new Image();
 	function handleError(idx) {
 		var r = new XMLHttpRequest();
@@ -39,7 +37,9 @@ function setupViewMode(params) {
 		next.onerror = function() { handleError(idx); };
 		next.onload = function() {
 			p.idx = idx;
-			view.src = src;
+			p.width = next.width;
+			p.height = next.height;
+			body.style.backgroundImage = "url(" + src + ")";
 			updateNav();
 			if (slideShow) {
 				timeout = setTimeout(showImage, 3000, idx + 1, true);
@@ -47,6 +47,7 @@ function setupViewMode(params) {
 		};
 		next.src = src;
 	}
+	showImage(p.idx);
 	document.onkeydown = function(e) {
 		if (e.keyCode == 32) {
 			showImage(p.idx + 1, false);
@@ -60,11 +61,19 @@ function setupViewMode(params) {
 		timeout = setTimeout(showImage, 3000, p.idx + 1, true);
 	};
  	var hidden = true;
-	view.addEventListener("click", function(event) {
-		var b = view.getBoundingClientRect();
-		if ((event.clientX - b.left) > 2*b.width/3) {
+	body.addEventListener("click", function(event) {
+		if (event.target != body) {
+			return;
+		}
+		var b = body.getBoundingClientRect();
+		var w = p.width / p.height * b.height;
+		if (w > b.width) {
+			w = b.width;
+		}
+		var left = (b.width - w) / 2;
+		if ((event.clientX - left) > 2*w/3) {
 			showImage(p.idx + 1, false);
-		} else if ((event.clientX - b.left) < b.width/3) {
+		} else if ((event.clientX - left) < w/3) {
 			showImage(p.idx - 1, false);
 		} else {
 			clearTimeout(timeout);
