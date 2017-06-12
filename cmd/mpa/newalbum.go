@@ -206,6 +206,14 @@ func isPortrait(filename string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	_, err = f.Seek(0, os.SEEK_SET)
+	if err != nil {
+		return false, err
+	}
+	orientation, _ := exifOrientation(f)
+	if orientation > 4 {
+		return cfg.Width > cfg.Height, nil
+	}
 	return cfg.Height > cfg.Width, nil
 }
 

@@ -9,13 +9,16 @@ import (
 	"errors"
 	"image"
 	"image/jpeg"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/anthonynsimon/bild/transform"
 	"github.com/nfnt/resize"
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 func (s *server) ServeImage(w http.ResponseWriter, r *http.Request) {
@@ -199,7 +202,7 @@ func (s *server) createPreviews(sha256sum string) error {
 	if exists == 2 {
 		return nil
 	}
-	img, err := s.readImage(sha256sum)
+	img, orientation, err := s.readImage(sha256sum)
 	if err != nil {
 		return err
 	}
@@ -210,27 +213,32 @@ func (s *server) createPreviews(sha256sum string) error {
 		}
 	}
 
-	if err := s.createPreview(filename1, img, 1280); err != nil {
+	if err := s.createPreview(filename1, img, 1280, orientation); err != nil {
 		return err
 	}
-	return s.createPreview(filename2, img, 320)
+	return s.createPreview(filename2, img, 320, orientation)
 }
 
-func (s *server) readImage(sha256sum string) (image.Image, error) {
+func (s *server) readImage(sha256sum string) (image.Image, int, error) {
 	filename := filepath.Join(s.db.imagesDir, sha256sum[:3], sha256sum[3:])
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer f.Close()
+
+	orientation, _ := exifOrientation(f)
+	if _, err := f.Seek(0, os.SEEK_SET); err != nil {
+		return nil, 0, err
+	}
 	img, _, err := image.Decode(f)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return img, f.Close()
+	return img, orientation, f.Close()
 }
 
-func (s *server) createPreview(filename string, img image.Image, maxSize uint) error {
+func (s *server) createPreview(filename string, img image.Image, maxSize uint, orientation int) error {
 	var pw, ph uint
 	size := img.Bounds().Size()
 	if size.Y > size.X {
@@ -240,7 +248,7 @@ func (s *server) createPreview(filename string, img image.Image, maxSize uint) e
 		pw = maxSize
 		ph = 0
 	}
-	img = resize.Resize(pw, ph, img, resize.Lanczos3)
+	img = applyOrientation(resize.Resize(pw, ph, img, resize.Lanczos3), orientation)
 	f, err := ioutil.TempFile(s.db.uploadDir, "tmp")
 	if err != nil {
 		return err
@@ -263,4 +271,44 @@ func (s *server) createPreview(filename string, img image.Image, maxSize uint) e
 	}
 	tmpFileName = ""
 	return nil
+}
+
+func exifOrientation(r io.Reader) (int, error) {
+	x, err := exif.Decode(r)
+	if err != nil {
+		return 1, err
+	}
+	o, err := x.Get("Orientation")
+	if err != nil {
+		return 1, err
+	}
+	i, err := o.Int(0)
+	if err != nil {
+		return 1, err
+	}
+	return i, nil
+}
+
+func applyOrientation(img image.Image, orientation int) image.Image {
+	o := &transform.RotationOptions{ResizeBounds: true, Pivot: &image.Point{0, 0}}
+	switch orientation {
+	default:
+		return img
+	case 1:
+		return img
+	case 2:
+		return transform.FlipH(img)
+	case 3:
+		return transform.Rotate(img, 180, o)
+	case 4:
+		return transform.FlipV(img)
+	case 5:
+		return transform.FlipH(transform.Rotate(img, 90, o))
+	case 6:
+		return transform.Rotate(img, 90, o)
+	case 7:
+		return transform.FlipH(transform.Rotate(img, -90, o))
+	case 8:
+		return transform.Rotate(img, -90, o)
+	}
 }
