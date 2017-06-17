@@ -109,8 +109,17 @@ function progress() {
 }
 
 function showError(msg) {
+	var err = document.getElementById("err")
+	var modal = document.getElementById('modal_err');
 	document.getElementById("error").firstChild.nodeValue = msg;
-	document.getElementById('modal_err').checked = true;
+	err.onkeydown = function(e) {
+		if (e.keyCode == 13 || e.keyCode == 27) {
+			modal.checked = false;
+			err.blur();
+		}
+	};
+	modal.checked = true;
+	err.focus();
 }
 
 function setupHTTPEventListeners(r, connectionError, callback, onResponse) {
@@ -123,7 +132,17 @@ function setupHTTPEventListeners(r, connectionError, callback, onResponse) {
 	r.onload = function() {
 		if (r.status == 200) {
 		} else if (r.status == 401) {
-			document.getElementById("login").innerHTML = r.response;
+			var login = document.getElementById("login");
+			login.onkeydown = function(e) {
+				if (e.keyCode == 13) {
+					document.getElementById("modal_login").checked = false;
+					loginOnClick(function() { callback(); });
+					return false;
+				} else if (e.keyCode == 27) {
+					document.getElementById("modal_login").checked = false;
+				}
+			};
+			login.innerHTML = r.response;
 			document.getElementById("modal_login").checked = true;
 			document.getElementById("login_submit").onclick = function() { loginOnClick(function() { callback(); }); };
 		} else {
@@ -179,10 +198,19 @@ function setupEditAlbum(submitURL, origName, imgs, clickMsg, noSubmitMsg, connec
 	this.edit = function(idx) {
 		this.modalIdx = idx;
 		title.value = this.images[idx].title;
+		title.focus();
 		modal1.checked = true; 
 		return false;
 	};
 	var obj = this;
+	document.getElementById("edit").onkeydown = function(e) {
+		if (e.keyCode == 13) {
+			obj.addTitle();
+			modal1.checked = false;
+		} else if (e.keyCode == 27) {
+			modal1.checked = false;
+		}
+	};
 	this.submit = function() {
 		var meta = {name: document.getElementById("albumName").value, titles: {}, edit: {deleted: this.deleted, titles: {}}};
 		var d = new FormData();
