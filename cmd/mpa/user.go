@@ -12,8 +12,10 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
 )
+
+const errConstraint = 19
 
 func (s *server) ServeNewUser(w http.ResponseWriter, r *http.Request) {
 	data := loginData{Lang: s.lang}
@@ -102,8 +104,8 @@ func (s *server) createNewUser(w http.ResponseWriter, r *http.Request, d *loginD
 		adminLevel = 1
 	}
 	if err := s.db.AddUser(s.db.db, d.Login, d.Name, d.Surname, d.Email, adminLevel, true, randomPass); err != nil {
-		if err, ok := err.(sqlite3.Error); ok {
-			if err.Code == sqlite3.ErrConstraint && err.ExtendedCode == sqlite3.ErrConstraintUnique {
+		if err, ok := err.(*sqlite.Error); ok {
+			if err.Code() == errConstraint {
 				e := err.Error()
 				if strings.Contains(e, "users.login") {
 					d.LoginMsg = s.tr("Login already registered")

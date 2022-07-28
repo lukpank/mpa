@@ -16,8 +16,8 @@ import (
 	"sync"
 
 	"github.com/bgentry/speakeasy"
-	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -34,7 +34,7 @@ type DB struct {
 var ErrSingleThread = errors.New("single threaded sqlite3 is not supported")
 
 func OpenDB(filename string) (*DB, error) {
-	db, err := sql.Open("sqlite3", filename)
+	db, err := sql.Open("sqlite", filename)
 	if err != nil {
 		return nil, err
 	}
