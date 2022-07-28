@@ -1,0 +1,8 @@
+*
+!go.sum
+!go.mod
+!cmd/mpa/*.go
+!cmd/mpa/templates/*.html
+!cmd/mpa/static/favicon.png
+!cmd/mpa/static/mpa.js
+!cmd/mpa/static/*.css
